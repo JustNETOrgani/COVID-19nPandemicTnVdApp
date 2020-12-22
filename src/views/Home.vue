@@ -1,6 +1,28 @@
 <template>
   <div class="home">
     <Head></Head>
+    <div id="wrapper">
+      <el-row :gutter="50">
+        <el-col :span="8">
+          <el-card shadow="hover">
+            <img class="unitLogo" src="../assets/imgs/healthFac.png" />
+            Health facility
+          </el-card>
+        </el-col>
+        <el-col :span="8">
+          <el-card shadow="hover">
+            <img class="unitLogo" src="../assets/imgs/verify.png" />
+            Verifier
+          </el-card>
+        </el-col>
+        <el-col :span="8">
+          <el-card shadow="hover">
+            <img class="unitLogo" src="../assets/imgs/yetTocome.jpg" />
+            Verifier
+          </el-card>
+        </el-col>
+      </el-row>
+    </div>
   <div id="footerDiv">
     <Footer></Footer>
   </div>
@@ -36,6 +58,14 @@ export default {
 </script>
 
 <style scoped>
+#wrapper{
+  margin: 2em 10em;
+}
+.unitLogo{
+  height: 10rem;
+  border-radius: 50%;
+  width: 10em;
+}
 #footerDiv {
   position: absolute;
   top: 38em;
