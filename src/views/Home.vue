@@ -18,7 +18,7 @@
         <el-col :span="8">
           <el-card shadow="hover">
             <img class="unitLogo" src="../assets/imgs/yetTocome.jpg" />
-            Verifier
+            Loading...
           </el-card>
         </el-col>
       </el-row>
