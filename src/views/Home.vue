@@ -5,20 +5,22 @@
       <el-row :gutter="50">
         <el-col :span="8">
           <el-card shadow="hover">
-            <img class="unitLogo" src="../assets/imgs/healthFac.png" />
-            Health facility
+            <a href="HealthFacility/healthFacIndexPg"><img class="unitLogo" src="../assets/imgs/healthFac.png" /></a>
+            <br>
+            <el-link :underline="false" href="HealthFacility/healthFacIndexPg"><p class="identification">Health facility</p></el-link>
           </el-card>
         </el-col>
         <el-col :span="8">
           <el-card shadow="hover">
-            <img class="unitLogo" src="../assets/imgs/verify.png" />
-            Verifier
+            <a href="Verifier/verify"><img class="unitLogo" src="../assets/imgs/verify.png" /></a>
+            <br>
+            <el-link :underline="false" href="Verifier/verify"><p class="identification">Verifier</p></el-link>
           </el-card>
         </el-col>
         <el-col :span="8">
           <el-card shadow="hover">
             <img class="unitLogo" src="../assets/imgs/yetTocome.jpg" />
-            Loading...
+            <p class="identification">Loading...</p>
           </el-card>
         </el-col>
       </el-row>
@@ -65,6 +67,14 @@ export default {
   height: 10rem;
   border-radius: 50%;
   width: 10em;
+}
+.unitLogo:hover{
+    transform: scale(1.1); /* Negative value rotates and decreases size.*/
+}
+.identification{
+  color: rgb(133, 112, 143);
+  font-size: 1.5rem;
+  font-family: sans-serif;
 }
 #footerDiv {
   position: absolute;
