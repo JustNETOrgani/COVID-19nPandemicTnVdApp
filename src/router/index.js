@@ -10,11 +10,28 @@ const routes = [
     name: 'Home',
     component: Home
   },
+  // Contract Delployer. E.g Ministry of health or CDC.
+  {
+    path: '/ContractManager/registerAHF',
+    name: 'ahfRegistration',
+    component: () => import('@/views/ContractManager/registerAHF.vue')
+  },
   // Health facility.
+  {
+    path: '/HealthFacility/healthFacIndexPg',
+    name: 'indexPgOfAHF',
+    component: () => import('@/views/HealthFacility/healthFacIndexPg.vue')
+  },
   {
     path: '/HealthFacility/personOnboarding',
     name: 'personOnboard',
     component: () => import('@/views/HealthFacility/personOnboarding.vue')
+  },
+  // Verifiers.
+  {
+    path: '/Verifier/verify',
+    name: 'torVverification',
+    component: () => import('@/views/Verifier/verify.vue')
   }
 ]
 const router = new VueRouter({
