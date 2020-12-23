@@ -1,63 +1,35 @@
 <template>
   <div>
     <el-footer>
-      <el-row :gutter="20">
-        <!-- <el-col :span="5">
-            <div class="grid-content bg-purple-dark">
-                <span id="ftLeftSpanOne">
-                    <p class="quickLinks"><a href="/">Home</a></p>
-                    <p class="quickLinks"><a href="/proveOfAuthorship">Prove Authorship</a></p>
-                </span>
-            </div>
-        </el-col>
-        <el-col :span="5">
-          <div class="grid-content bg-purple-dark">
-              <span id="ftLeftSpanTwo">
-                    <p class="quickLinks"><a href="/authors/submitPaper">Submit Manuscript</a></p>
-                    <p class="quickLinks"><a href="/paperTrackingService">Track Manuscript</a></p>
-                </span>
-          </div>
-        </el-col>
-        <el-col :span="5">
-          <div class="grid-content bg-purple-dark">
-                <span id="ftLeftSpanThree">
-                    <p class="quickLinks"><a href="/authorProfile">Author Works</a></p>
-                    <p class="quickLinks"><a href="/globalUsers/globalDashboard">Check Open Access</a></p>
-                </span>
-            </div>
-        </el-col>
-
-        <el-col :span="1">
-            <div class="grid-content bg-purple-dark">
-              <a href="https://www.facebook.com"><img id="mysocialImg" src="../assets/imgs/fb.png" width="50px" height="50px" alt="facebook" class="rounded-circle"></a>
-            </div>
-        </el-col> -->
-        <el-col :span="1">
-            <div class="grid-content bg-purple-dark">
-                <a href="https://www.twitter.com"><img id="mysocialImg" src="../assets/imgs/tw.png" width="50px" height="50px" alt="twitter" class="rounded-circle"></a>
-            </div>
-        </el-col>
-        <el-col :span="1">
-            <div class="grid-content bg-purple-dark">
-                <a href="https://www.instagram.com"><img id="mysocialImg" src="../assets/imgs/instag.png" width="50px" height="50px" alt="instagram" class="rounded-circle"></a>
-            </div>
-        </el-col>
-        <el-col :span="1">
-            <div class="grid-content bg-purple-dark">
-                <a href="https://www.youtube.com"><img id="mysocialImg" src="../assets/imgs/yTube.png" width="50px" height="50px" alt="youtube" class="rounded-circle"></a>
-            </div>
-        </el-col>
-        <el-col :span="1">
-            <div class="grid-content bg-purple-dark">
-                <a href="https://www.baidu.com"><img id="mysocialImg" src="../assets/imgs/bdu.png" width="50px" height="50px" alt="baidu" class="rounded-circle"></a>
-            </div>
-        </el-col>
-        <el-col :span="1">
-            <div class="grid-content bg-purple-dark">
-                <a href="https://www.github.com"><img id="mysocialImg" src="../assets/imgs/gith.png" width="50px" height="50px" alt="gitHub" class="rounded-circle"></a>
-            </div>
-        </el-col>
-      </el-row>
+        <div id="socialMediaDiv">
+            <el-row :gutter="10">
+                <el-col :span="4" :offset="1">
+                    <div class="grid-content bg-purple-dark">
+                        <a href="https://www.twitter.com"><img id="mysocialImg" src="../assets/imgs/tw.png" width="50px" height="50px" alt="twitter" class="rounded-circle"></a>
+                    </div>
+                </el-col>
+                <el-col :span="4" :offset="1">
+                    <div class="grid-content bg-purple-dark">
+                        <a href="https://www.instagram.com"><img id="mysocialImg" src="../assets/imgs/instag.png" width="50px" height="50px" alt="instagram" class="rounded-circle"></a>
+                    </div>
+                </el-col>
+                <el-col :span="4" :offset="1">
+                    <div class="grid-content bg-purple-dark">
+                        <a href="https://www.youtube.com"><img id="mysocialImg" src="../assets/imgs/yTube.png" width="50px" height="50px" alt="youtube" class="rounded-circle"></a>
+                    </div>
+                </el-col>
+                <el-col :span="4" :offset="1">
+                    <div class="grid-content bg-purple-dark">
+                        <a href="https://www.baidu.com"><img id="mysocialImg" src="../assets/imgs/bdu.png" width="50px" height="50px" alt="baidu" class="rounded-circle"></a>
+                    </div>
+                </el-col>
+                <el-col :span="4">
+                    <div class="grid-content bg-purple-dark">
+                        <a href="https://www.github.com"><img id="mysocialImg" src="../assets/imgs/gith.png" width="50px" height="50px" alt="gitHub" class="rounded-circle"></a>
+                    </div>
+                </el-col>
+            </el-row>
+        </div>
         <el-row>
           <el-col :span="24">
             <div class="grid-content bg-purple-dark">
@@ -90,19 +62,8 @@ export default {
 /* .el-footer{
     background-color: #d6e1f0;
 } */
-.quickLinks{
-    margin-left: 5.5%;
-    margin-top: 3.5%;
-}
-.quickLinks a{
-    color: inherit;
-    text-decoration: none;
-}
-
-.quickLinks a:hover{
-    color: rgb(104, 129, 124);
-    font-family: cursive;
-    text-decoration: none;
+#socialMediaDiv{
+    margin: 0.2rem 30rem;
 }
 #footer h5{
   padding-left: 10px;
