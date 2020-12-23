@@ -5,6 +5,13 @@
       <el-row :gutter="50">
         <el-col :span="8">
           <el-card shadow="hover">
+            <a href="ContractManager/registerAHF"><img class="unitLogo" src="../assets/imgs/contractDeployer.png" /></a>
+            <br>
+            <el-link :underline="false" href="ContractManager/registerAHF"><p class="identification">Contract Deployer</p></el-link>
+          </el-card>
+        </el-col>
+        <el-col :span="8">
+          <el-card shadow="hover">
             <a href="HealthFacility/healthFacIndexPg"><img class="unitLogo" src="../assets/imgs/healthFac.png" /></a>
             <br>
             <el-link :underline="false" href="HealthFacility/healthFacIndexPg"><p class="identification">Health facility</p></el-link>
@@ -15,12 +22,6 @@
             <a href="Verifier/verify"><img class="unitLogo" src="../assets/imgs/verify.png" /></a>
             <br>
             <el-link :underline="false" href="Verifier/verify"><p class="identification">Verifier</p></el-link>
-          </el-card>
-        </el-col>
-        <el-col :span="8">
-          <el-card shadow="hover">
-            <img class="unitLogo" src="../assets/imgs/yetTocome.jpg" />
-            <p class="identification">Loading...</p>
           </el-card>
         </el-col>
       </el-row>
