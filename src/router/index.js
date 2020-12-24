@@ -16,6 +16,11 @@ const routes = [
     name: 'ahfRegistration',
     component: () => import('@/views/ContractManager/registerAHF.vue')
   },
+  {
+    path: '/ContractManager/managerLanding',
+    name: 'contractMngrIndexPg',
+    component: () => import('@/views/ContractManager/managerLanding.vue')
+  },
   // Health facility.
   {
     path: '/HealthFacility/healthFacIndexPg',

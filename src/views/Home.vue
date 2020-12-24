@@ -5,9 +5,9 @@
       <el-row :gutter="50">
         <el-col :span="8">
           <el-card shadow="hover">
-            <a href="ContractManager/registerAHF"><img class="unitLogo" src="../assets/imgs/contractDeployer.png" /></a>
+            <a href="ContractManager/managerLanding"><img class="unitLogo" src="../assets/imgs/contractDeployer.png" /></a>
             <br>
-            <el-link :underline="false" href="ContractManager/registerAHF"><p class="identification">Contract Deployer</p></el-link>
+            <el-link :underline="false" href="ContractManager/managerLanding"><p class="identification">Contract Deployer</p></el-link>
           </el-card>
         </el-col>
         <el-col :span="8">
