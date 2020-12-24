@@ -48,17 +48,17 @@
                 </el-col>
                  <el-col :span="12">
                    <h3>Core tasks.</h3>
-                   <a href="ContractManager/registerAHF"><img class="coreTasksLogo" src="../../assets/imgs/registerAHF.png" /></a>
+                   <a href="registerAHF"><img class="coreTasksLogo" src="../../assets/imgs/registerAHF.png" /></a>
                    <br>
-                   <el-link :underline="false" href="ContractManager/registerAHF"><p>Register new AHF</p></el-link>
+                   <el-link :underline="false" href="registerAHF"><p>Register new AHF</p></el-link>
                    <br>
-                   <a href="ContractManager/statistics"><img class="coreTasksLogo" src="../../assets/imgs/statisticsImg.png" /></a>
+                   <a href="statistics"><img class="coreTasksLogo" src="../../assets/imgs/statisticsImg.png" /></a>
                    <br>
-                   <el-link :underline="false" href="ContractManager/statistics"><p>Retrieve test/vaccine statistics</p></el-link>
+                   <el-link :underline="false" href="statistics"><p>Retrieve test/vaccine statistics</p></el-link>
                    <br>
-                   <a href="ContractManager/revokeAHF"><img class="coreTasksLogo" src="../../assets/imgs/revokeAHF.png" /></a>
+                   <a href="revokeAHF"><img class="coreTasksLogo" src="../../assets/imgs/revokeAHF.png" /></a>
                    <br>
-                   <el-link :underline="false" href="ContractManager/revokeAHF"><p>Revoke AHF</p></el-link>
+                   <el-link :underline="false" href="revokeAHF"><p>Revoke AHF</p></el-link>
                  </el-col>
             </el-row>
         </div>

@@ -3,7 +3,7 @@
         <div id="topNav">
           <el-link icon="el-icon-arrow-left" style="font-size:17px;float:left;" @click="backToPrvPg">Previous Page</el-link>
         </div>
-        <div class="formArea" v-loading="loadingJcreationPage">
+        <div class="formArea">
           <el-row>
             <el-col :span="4" :offset="10">
               <img id="registImg" src="../../assets/imgs/registerAHF.png" />
@@ -72,7 +72,7 @@ export default {
   },
   methods: {
     backToPrvPg () {
-      this.$router.push('/')
+      this.$router.push('managerlanding')
     },
     resetForm (formName) {
       this.$refs[formName].resetFields()
