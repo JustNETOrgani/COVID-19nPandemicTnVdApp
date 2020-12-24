@@ -1,16 +1,16 @@
 <template>
     <div class="pageContainer">
         <div id="topNav">
-          <el-link icon="el-icon-arrow-left" style="font-size:17px;float:left;" @click="backToPrvPack">Previous Page</el-link>
+          <el-link icon="el-icon-arrow-left" style="font-size:17px;float:left;" @click="backToPrvPg">Previous Page</el-link>
         </div>
         <div class="formArea" v-loading="loadingJcreationPage">
           <el-row>
             <el-col :span="4" :offset="10">
-              <img id="registImg" src="../../assets/imgs/ahfRegistration.png" />
+              <img id="registImg" src="../../assets/imgs/registerAHF.png" />
             </el-col>
           </el-row>
             <h2>Approved Health Facility (AHF) registration</h2>
-            <p>This empowers the AHF to administer tests/vaccines.</p>
+            <p>This empowers the AHF to onboard persons on the blockchain.</p>
             <el-row>
                 <el-col :span="20" :offset="2">
                     <div class="grid-content bg-purple-dark">
@@ -23,14 +23,14 @@
                                 <el-checkbox v-model="ahfRegistForm.authCheckBox">I fully understand the implication of this action.</el-checkbox>
                             </el-form-item>
                             <el-form-item label="Name of AHF" prop="ahfName">
-                                <el-input v-model="ahfRegistForm.ahfName" placeholder="Please input name of the Aproved Health Facility (AHF)."></el-input>
+                                <el-input v-model="ahfRegistForm.ahfName" placeholder="Name of the Aproved Health Facility (AHF)."></el-input>
                             </el-form-item>
                             <el-form-item label="Address of AHF" prop="ahfAddress">
                                 <el-input v-model="ahfRegistForm.ahfAddress" placeholder="Please input Eth address of AHF."></el-input>
                             </el-form-item>
                             <el-form-item>
-                                <el-button type="primary" :loading="voteOnJBtnLoadState" @click="submitForm('voteOnJForm')">Create</el-button>
-                                <el-button @click="resetForm('voteOnJForm')">Reset</el-button>
+                                <el-button type="primary" :loading="registAHFBtnLoadState" @click="submitForm('ahfRegistForm')">Create</el-button>
+                                <el-button @click="resetForm('ahfRegistForm')">Reset</el-button>
                             </el-form-item>
                         </el-form>
                     </div>
@@ -49,7 +49,8 @@ export default {
       ahfRegistForm: {
         authCheckBox: '',
         ahfName: '',
-        ahfAddress: ''
+        ahfAddress: '',
+        registAHFBtnLoadState: false
       },
       rules: {
         authCheckBox: [
@@ -70,7 +71,12 @@ export default {
 
   },
   methods: {
-
+    backToPrvPg () {
+      this.$router.push('/')
+    },
+    resetForm (formName) {
+      this.$refs[formName].resetFields()
+    }
   },
   computed: {
 
@@ -94,7 +100,7 @@ export default {
   background-color: #ffffff;
   border-radius: 4px;
   margin: 2.5% auto;
-  width: 48%;
+  width: 40%;
   padding: 1rem 1.5rem;
 }
 
