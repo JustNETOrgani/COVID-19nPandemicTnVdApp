@@ -19,16 +19,16 @@
         </el-col>
         <el-col :span="6">
           <el-card shadow="hover">
-            <a href="Verifier/verify"><img class="unitLogo" src="../assets/imgs/verify.png" /></a>
+            <a href="Person/createBlockchainAccount"><img class="unitLogo" src="../assets/imgs/personImg.png" /></a>
             <br>
-            <el-link :underline="false" href="Verifier/verify"><p class="identification">Verifier</p></el-link>
+            <el-link :underline="false" href="Person/createBlockchainAccount"><p class="identification">Person</p></el-link>
           </el-card>
         </el-col>
         <el-col :span="6">
           <el-card shadow="hover">
-            <a href="Person/createBlockchainAccount"><img class="unitLogo" src="../assets/imgs/personImg.png" /></a>
+            <a href="Verifier/verify"><img class="unitLogo" src="../assets/imgs/verify.png" /></a>
             <br>
-            <el-link :underline="false" href="Person/createBlockchainAccount"><p class="identification">Person</p></el-link>
+            <el-link :underline="false" href="Verifier/verify"><p class="identification">Verifier</p></el-link>
           </el-card>
         </el-col>
       </el-row>
