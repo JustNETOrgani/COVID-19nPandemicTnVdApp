@@ -44,7 +44,7 @@
                    <h3>Core tasks.</h3>
                    <a href="personOnboarding"><img class="coreTasksLogo" src="../../assets/imgs/onboardPerson.png" /></a>
                    <br>
-                   <el-link :underline="false" href="personOnboarding"><p>Person onboarding</p></el-link>
+                   <el-link :underline="false" href="personOnboarding"><p class="imgDescription">Person onboarding</p></el-link>
                    <br>
                    <a href="ahfStatistics"><img class="coreTasksLogo" src="../../assets/imgs/statisticsImg.png" /></a>
                    <br>
@@ -98,17 +98,19 @@ export default {
   width: 40%;
   padding: 1rem 1.5rem;
 }
+.el-menu-vertical-demo:not(.el-menu--collapse) {
+    width: 200px;
+    min-height: 400px;
+}
 .coreTasksLogo{
   height: 5rem;
   border-radius: 50%;
   width: 5em;
-  margin-bottom: 3rem;
 }
 .coreTasksLogo:hover{
     transform: scale(1.1); /* Negative value rotates and decreases size.*/
 }
-.el-menu-vertical-demo:not(.el-menu--collapse) {
-    width: 200px;
-    min-height: 400px;
+.imgDescription{
+    margin-bottom: 3rem;
 }
 </style>
