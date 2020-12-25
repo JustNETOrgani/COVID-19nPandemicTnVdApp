@@ -3,25 +3,32 @@
     <Head></Head>
     <div id="wrapper">
       <el-row :gutter="50">
-        <el-col :span="8">
+        <el-col :span="6">
           <el-card shadow="hover">
             <a href="ContractManager/managerLanding"><img class="unitLogo" src="../assets/imgs/contractDeployer.png" /></a>
             <br>
             <el-link :underline="false" href="ContractManager/managerLanding"><p class="identification">Contract Deployer</p></el-link>
           </el-card>
         </el-col>
-        <el-col :span="8">
+        <el-col :span="6">
           <el-card shadow="hover">
             <a href="HealthFacility/healthFacIndexPg"><img class="unitLogo" src="../assets/imgs/healthFac.png" /></a>
             <br>
             <el-link :underline="false" href="HealthFacility/healthFacIndexPg"><p class="identification">Health facility</p></el-link>
           </el-card>
         </el-col>
-        <el-col :span="8">
+        <el-col :span="6">
           <el-card shadow="hover">
             <a href="Verifier/verify"><img class="unitLogo" src="../assets/imgs/verify.png" /></a>
             <br>
             <el-link :underline="false" href="Verifier/verify"><p class="identification">Verifier</p></el-link>
+          </el-card>
+        </el-col>
+        <el-col :span="6">
+          <el-card shadow="hover">
+            <a href="Person/createBlockchainAccount"><img class="unitLogo" src="../assets/imgs/personImg.png" /></a>
+            <br>
+            <el-link :underline="false" href="Person/createBlockchainAccount"><p class="identification">Person</p></el-link>
           </el-card>
         </el-col>
       </el-row>

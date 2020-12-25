@@ -37,6 +37,12 @@ const routes = [
     path: '/Verifier/verify',
     name: 'torVverification',
     component: () => import('@/views/Verifier/verify.vue')
+  },
+  // Person.
+  {
+    path: '/Person/createBlockchainAccount',
+    name: 'getBlockchainAccount',
+    component: () => import('@/views/Person/createBlockchainAccount.vue')
   }
 ]
 const router = new VueRouter({
