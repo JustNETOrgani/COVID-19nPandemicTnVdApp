@@ -11,6 +11,9 @@
                     <p>Create your blockchian address here</p>
                   </el-link>
                 </el-col>
+                <el-col :span="12">
+                  <a href="https://www.myetherwallet.com/"><img src="../../assets/imgs/mewImg.png" /></a>
+                </el-col>
             </el-row>
         </div>
     </div>
@@ -58,20 +61,5 @@ export default {
   margin: 2.5% auto;
   width: 40%;
   padding: 1rem 1.5rem;
-}
-.el-menu-vertical-demo:not(.el-menu--collapse) {
-    width: 200px;
-    min-height: 400px;
-}
-.coreTasksLogo{
-  height: 5rem;
-  border-radius: 50%;
-  width: 5em;
-}
-.coreTasksLogo:hover{
-    transform: scale(1.1); /* Negative value rotates and decreases size.*/
-}
-.imgDescription{
-    margin-bottom: 3rem;
 }
 </style>
