@@ -6,27 +6,75 @@
         <div class="wrapper">
             <h2>Person Onboarding on the blockchain</h2>
             <el-row>
-                <el-col :span="22">
+                <el-col :span="11">
                     <div class="grid-content bg-purple-dark">
                         <el-form
                             :model="onboardPerson"
                             :rules="rules"
                             ref="onboardPerson"
-                            label-width="180px"
+                            label-width="145px"
                         >
-                            <el-form-item label="Person address" prop="personAddress">
-                                <el-input v-model="onboardPerson.personAddress" placeholder="Please enter Eth address of person."></el-input>
+                            <el-form-item label="Center ID" prop="centerID">
+                                <el-input v-model="onboardPerson.centerID" placeholder="Please enter center ID."></el-input>
                             </el-form-item>
-                            <el-form-item label="**Journal's consent**" prop="authCheckBox">
+                            <el-form-item label="Test status" prop="tStatus">
+                                <el-select
+                                    v-model="onboardPerson.tStatus"
+                                    style="width:100%"
+                                    placeholder="Select test status">
+                                    <el-option label="Positive" value="tPositive"></el-option>
+                                    <el-option label="Negative" value="tNegative"></el-option>
+                                </el-select>
+                            </el-form-item>
+                            <el-form-item label="Vaccination status" prop="vStatus">
+                                <el-select
+                                    v-model="onboardPerson.vStatus"
+                                    style="width:100%"
+                                    placeholder="Select vaccination status">
+                                    <el-option label="Not vaccinated" value="vaccinated"></el-option>
+                                    <el-option label="Vaccinated" value="notVaccinated"></el-option>
+                                </el-select>
+                            </el-form-item>
+                            <br>
+                            <el-form-item label="**AHP's consent**" prop="authCheckBox">
                                 <el-checkbox v-model="onboardPerson.authCheckBox">I fully understand the implication of this action.</el-checkbox>
-                            </el-form-item>
-                            <el-form-item>
-                                <el-button type="primary" :loading="personOnboardLoadBtn" @click="submitForm('onboardPerson')">Submit</el-button>
-                                <el-button @click="resetForm('onboardPerson')">Reset</el-button>
                             </el-form-item>
                         </el-form>
                     </div>
                 </el-col>
+                <el-col :span="12" :offset="1">
+                    <fieldset>
+                        <legend>Computed Information</legend>
+                            <el-row>
+                                <el-col :span="10" :offset="1">
+                                    <p class="computedLabels">Hash of EcDR</p>
+                                    <p class="formattedString">{{hEcDR}}</p>
+                                </el-col>
+                            </el-row>
+                            <el-row>
+                                <el-col :span="10" :offset="1">
+                                    <p class="computedLabels">IPFS Hash of EcDR</p>
+                                    <p class="formattedString">{{IPFSHashOfhEcDR}}</p>
+                                </el-col>
+                            </el-row>
+                            <el-row>
+                                <el-col :span="10" :offset="1">
+                                    <p class="computedLabels">Person address</p>
+                                    <p class="formattedString">{{address}}</p>
+                                </el-col>
+                            </el-row>
+                            <el-row>
+                                <el-col :span="10" :offset="1">
+                                    <p class="computedLabels">Person signature</p>
+                                    <p class="formattedString">{{signature}}</p>
+                                </el-col>
+                            </el-row>
+                    </fieldset>
+                </el-col>
+            </el-row>
+            <el-row>
+                <el-button type="primary" :loading="personOnboardLoadBtn" @click="submitForm('onboardPerson')">Submit</el-button>
+                <el-button @click="resetForm('onboardPerson')">Reset</el-button>
             </el-row>
         </div>
     </div>
@@ -37,22 +85,44 @@
 export default {
   data () {
     return {
-      isCollapse: true
+      onboardPerson: {
+        centerID: '',
+        tStatus: '',
+        vStatus: '',
+        authCheckBox: ''
+      },
+      // Dynamic variables.
+      hEcDR: '',
+      IPFSHashOfhEcDR: '',
+      signature: '',
+      address: '',
+      rules: {
+        centerID: [
+          { required: true, message: 'Please input center ID', trigger: 'blur' },
+          { min: 5, message: 'Length should be at least 5', trigger: 'blur' }
+        ],
+        tStatus: [
+          { required: true, message: 'Please select test status from the list.', trigger: 'blur' }
+        ],
+        vStatus: [
+          { required: true, message: 'Please select vaccination status from the list.', trigger: 'blur' }
+        ]
+      }
     }
   },
   methods: {
     backToPrvPg () {
-      this.$router.push('/healthFacIndexPg')
+      this.$router.push('healthFacIndexPg')
     },
     handleOpen (key, keyPath) {
       console.log(key, keyPath)
     },
     handleClose (key, keyPath) {
       console.log(key, keyPath)
+    },
+    resetForm (formName) {
+      this.$refs[formName].resetFields()
     }
-  },
-  computed: {
-
   }
 }
 </script>
@@ -71,8 +141,25 @@ export default {
 .wrapper {
   background-color: #ffffff;
   border-radius: 4px;
-  margin: 2.5% auto;
-  width: 40%;
+  margin: 3% auto;
+  width: 75%;
   padding: 1rem 1.5rem;
+}
+fieldset {
+  border-radius: 2rem;
+}
+
+legend {
+ font-style: italic;
+}
+.computedLabels{
+  text-align: left;
+  font-size: 0.9rem;
+  color: rgb(113, 140, 189);
+}
+.formattedString{
+  font-size: 0.8rem;
+  font-style: italic;
+  color: rgb(113, 140, 189);
 }
 </style>
