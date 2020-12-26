@@ -6,7 +6,7 @@
         <div class="wrapper" v-loading="loadingPOnboardingPage">
             <h2>Person Onboarding on the blockchain</h2>
             <el-row>
-                <el-col :span="11">
+                <el-col :span="9">
                     <div class="grid-content bg-purple-dark">
                         <el-form
                             :model="onboardPerson"
@@ -42,30 +42,36 @@
                         </el-form>
                     </div>
                 </el-col>
-                <el-col :span="12" :offset="1">
+                <el-col :span="13" :offset="2">
                     <fieldset>
                         <legend>On-chain data</legend>
                             <el-row>
-                                <el-col :span="10" :offset="1">
-                                    <p class="computedLabels">Hash of EcDR</p>
+                                <el-col :span="5" :offset="0">
+                                    <p class="computedLabels">Hash of EcDR:</p>
+                                </el-col>
+                                <el-col :span="5" :offset="0">
                                     <p class="formattedString">{{hEcDR}}</p>
                                 </el-col>
                             </el-row>
                             <el-row>
-                                <el-col :span="10" :offset="1">
-                                    <p class="computedLabels">IPFS Hash of EcDR</p>
+                                <el-col :span="5" :offset="0">
+                                    <p class="computedLabels">IPFS Hash of EcDR:</p>
+                                </el-col>
+                                <el-col :span="5" :offset="0">
                                     <p class="formattedString">{{IPFSHashOfhEcDR}}</p>
                                 </el-col>
                             </el-row>
                             <el-row>
-                                <el-col :span="10" :offset="1">
-                                    <p class="computedLabels">Person address</p>
+                                <el-col :span="5" :offset="0">
+                                    <p class="computedLabels">Person address:</p>
+                                </el-col>
+                                <el-col :span="5" :offset="0">
                                     <p class="formattedString">{{address}}</p>
                                 </el-col>
                             </el-row>
                             <el-row>
-                                <el-col :span="10" :offset="1">
-                                    <p class="computedLabels">Person signature</p>
+                                <el-col :span="10" :offset="0">
+                                    <p class="computedLabels">Person signature:</p>
                                     <p class="formattedString">{{signature}}</p>
                                 </el-col>
                             </el-row>
@@ -83,6 +89,7 @@
 <script>
 import ethEnabled from '@/assets/js/web3nMetaMask'
 import { generateKeyPair, asymmEncrypt } from '@/assets/js/asymmEncrypt'
+import getHash from '@/assets/js/hashFunc'
 
 export default {
   data () {
@@ -159,6 +166,9 @@ export default {
             var EcDR = asymmEncrypt(this.AHPkeyGenerated, data, this.pubKeyOfPerson)
             console.log('EcDR: ', EcDR)
             // Hash encrypted data---> hEcDR.
+            getHash(EcDR).then(res => {
+              this.hEcDR = res
+            })
             // AHP signs hEcDR to get signature. --->AHPsignature
             // Push EcDR to IPFS to get IPFShash
             // Person signs IPFShash to get signature.
@@ -232,12 +242,12 @@ legend {
 }
 .computedLabels{
   text-align: left;
-  font-size: 0.9rem;
+  font-size: 0.72rem;
   color: rgb(113, 140, 189);
 }
 .formattedString{
-  font-size: 0.8rem;
+  font-size: 0.73rem;
   font-style: italic;
-  color: rgb(113, 140, 189);
+  color: rgb(95, 64, 116);
 }
 </style>
