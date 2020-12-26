@@ -44,7 +44,7 @@
                 </el-col>
                 <el-col :span="12" :offset="1">
                     <fieldset>
-                        <legend>Computed Information</legend>
+                        <legend>On-chain data</legend>
                             <el-row>
                                 <el-col :span="10" :offset="1">
                                     <p class="computedLabels">Hash of EcDR</p>
