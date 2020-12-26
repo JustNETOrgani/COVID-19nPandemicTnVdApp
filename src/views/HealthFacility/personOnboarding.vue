@@ -81,7 +81,9 @@
 </template>
 
 <script>
-import ethEnabled from '@/assets/js/web3'
+import ethEnabled from '@/assets/js/web3nMetaMask'
+import { generateKeyPair, asymmEncrypt } from '@/assets/js/asymmEncrypt'
+
 export default {
   data () {
     return {
@@ -97,6 +99,8 @@ export default {
       signature: '',
       address: '',
       currentEthAddress: '',
+      pubKeyOfPerson: '',
+      AHPkeyGenerated: '',
       // Loading states
       personOnboardLoadBtn: false,
       loadingPOnboardingPage: true,
@@ -122,6 +126,7 @@ export default {
       this.getAccount().then(accounts => {
         this.currentEthAddress = accounts[0]
         console.log('Current account: ', this.currentEthAddress)
+        this.getPublicKeyOfPerson()
       })
     }
   },
@@ -151,6 +156,8 @@ export default {
             }
             console.log('Data: ', data)
             // Encrypt data using user public key ---> EcDR
+            var EcDR = asymmEncrypt(this.AHPkeyGenerated, data, this.pubKeyOfPerson)
+            console.log('EcDR: ', EcDR)
             // Hash encrypted data---> hEcDR.
             // AHP signs hEcDR to get signature. --->AHPsignature
             // Push EcDR to IPFS to get IPFShash
@@ -170,6 +177,29 @@ export default {
     async getAccount () {
       var accounts = await window.ethereum.request({ method: 'eth_requestAccounts' })
       return accounts
+    },
+    async getPublicKeyOfPerson () {
+      this.$prompt('Please input public key of Person.', 'Information required', {
+        confirmButtonText: 'OK',
+        cancelButtonText: 'Cancel',
+        inputPattern: /^0x[0-9A-F]{64}$/i
+      }).then(({ value }) => {
+        // Valid Public key before proceeding.
+        this.pubKeyOfPerson = this.convertHextoBytes(value.substring(2))
+        // Create key pair.
+        var AHPkeyGen = generateKeyPair()
+        this.AHPkeyGenerated = AHPkeyGen.secretKey
+        console.log('Public key acquired.')
+      }).catch((err) => {
+        console.log('User has cancelled.', err)
+        // window.location.reload() // Reload page.
+      })
+    },
+    // Some helper functions during encryption.
+    convertHextoBytes (hexString) {
+      var bytes = new Uint8Array(Math.ceil(hexString.length / 2))
+      for (var i = 0; i < bytes.length; i++) bytes[i] = parseInt(hexString.substr(i * 2, 2), 16)
+      return bytes
     }
   }
 }
