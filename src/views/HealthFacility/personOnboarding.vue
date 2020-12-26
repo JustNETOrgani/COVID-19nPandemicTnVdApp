@@ -3,7 +3,7 @@
         <div id="topNav">
           <el-link icon="el-icon-arrow-left" style="font-size:17px;float:left;" @click="backToPrvPg">Previous Page</el-link>
         </div>
-        <div class="wrapper">
+        <div class="wrapper" v-loading="loadingPOnboardingPage">
             <h2>Person Onboarding on the blockchain</h2>
             <el-row>
                 <el-col :span="11">
@@ -22,8 +22,8 @@
                                     v-model="onboardPerson.tStatus"
                                     style="width:100%"
                                     placeholder="Select test status">
-                                    <el-option label="Positive" value="tPositive"></el-option>
-                                    <el-option label="Negative" value="tNegative"></el-option>
+                                    <el-option label="Positive" value="Positive"></el-option>
+                                    <el-option label="Negative" value="Negative"></el-option>
                                 </el-select>
                             </el-form-item>
                             <el-form-item label="Vaccination status" prop="vStatus">
@@ -31,8 +31,8 @@
                                     v-model="onboardPerson.vStatus"
                                     style="width:100%"
                                     placeholder="Select vaccination status">
-                                    <el-option label="Not vaccinated" value="vaccinated"></el-option>
-                                    <el-option label="Vaccinated" value="notVaccinated"></el-option>
+                                    <el-option label="Not vaccinated" value="Not Vaccinated"></el-option>
+                                    <el-option label="Vaccinated" value="vaccinated"></el-option>
                                 </el-select>
                             </el-form-item>
                             <br>
@@ -81,7 +81,7 @@
 </template>
 
 <script>
-
+import ethEnabled from '@/assets/js/web3'
 export default {
   data () {
     return {
@@ -96,6 +96,10 @@ export default {
       IPFSHashOfhEcDR: '',
       signature: '',
       address: '',
+      currentEthAddress: '',
+      // Loading states
+      personOnboardLoadBtn: false,
+      loadingPOnboardingPage: true,
       rules: {
         centerID: [
           { required: true, message: 'Please input center ID', trigger: 'blur' },
@@ -110,6 +114,17 @@ export default {
       }
     }
   },
+  created () {
+    if (!ethEnabled()) {
+      this.$message('Please install an Ethereum-compatible browser or extension like MetaMask to use this dApp!')
+    } else {
+      this.loadingPOnboardingPage = false
+      this.getAccount().then(accounts => {
+        this.currentEthAddress = accounts[0]
+        console.log('Current account: ', this.currentEthAddress)
+      })
+    }
+  },
   methods: {
     backToPrvPg () {
       this.$router.push('healthFacIndexPg')
@@ -122,6 +137,39 @@ export default {
     },
     resetForm (formName) {
       this.$refs[formName].resetFields()
+    },
+    submitForm (formName) {
+      if (this.onboardPerson.authCheckBox === true) {
+        this.$refs[formName].validate(valid => {
+          this.personOnboardLoadBtn = true
+          if (valid) {
+            var data = {
+              centerID: this.onboardPerson.centerID,
+              tStatus: this.onboardPerson.tStatus,
+              vStatus: this.onboardPerson.vStatus,
+              timeStamp: new Date().getTime()
+            }
+            console.log('Data: ', data)
+            // Encrypt data using user public key ---> EcDR
+            // Hash encrypted data---> hEcDR.
+            // AHP signs hEcDR to get signature. --->AHPsignature
+            // Push EcDR to IPFS to get IPFShash
+            // Person signs IPFShash to get signature.
+            // Anchor data onto the blockchain via Smart Contract.
+            this.personOnboardLoadBtn = false
+          } else {
+            console.log('Submission error.')
+            this.personOnboardLoadBtn = false
+            return false
+          }
+        })
+      } else {
+        this.$message('Please check the checkbox')
+      }
+    },
+    async getAccount () {
+      var accounts = await window.ethereum.request({ method: 'eth_requestAccounts' })
+      return accounts
     }
   }
 }
