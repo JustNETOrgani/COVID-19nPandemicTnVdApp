@@ -83,6 +83,17 @@
                 <el-button @click="resetForm('onboardPerson')">Reset</el-button>
             </el-row>
         </div>
+        <el-dialog
+          title="Switch account"
+          :visible.sync="accountSwitchDialogVisible"
+          width="30%"
+          :before-close="handleAccountSwitchDialogClose">
+          <span>Allow user to sign IPFS hash</span>
+          <span slot="footer" class="dialog-footer">
+            <el-button @click="accountSwitchDialogVisible = false">Cancel</el-button>
+            <el-button type="primary" @click="accountSwitchDialogVisible = false">Ok</el-button>
+          </span>
+        </el-dialog>
     </div>
 </template>
 
@@ -116,6 +127,10 @@ export default {
       // Loading states
       personOnboardLoadBtn: false,
       loadingPOnboardingPage: true,
+      // Account change status.
+      accountChangeStatus: false,
+      // Dialogs.
+      accountSwitchDialogVisible: false,
       rules: {
         centerID: [
           { required: true, message: 'Please input center ID', trigger: 'blur' },
@@ -154,6 +169,13 @@ export default {
     },
     resetForm (formName) {
       this.$refs[formName].resetFields()
+    },
+    handleAccountSwitchDialogClose (done) {
+      this.$confirm('Are you sure to close this dialog?')
+        .then(_ => {
+          done()
+        })
+        .catch(_ => {})
     },
     submitForm (formName) {
       if (this.onboardPerson.authCheckBox === true) {
@@ -237,6 +259,14 @@ export default {
         console.log('Data upload to IPFS sucessful')
         this.$message('File upload to IPFS successful.')
         this.IPFSHashOfhEcDR = res[0].hash
+        if (this.accountChangeStatus === false) {
+          this.accountSwitchDialogVisible = true
+          window.ethereum.on('accountsChanged', function (accounts) {
+            this.currentEthAddress = accounts[0]
+            console.log('New account: ', this.currentEthAddress)
+            this.accountChangeStatus = true
+          })
+        }
       })
     },
     prepareDataToIPFS () {
