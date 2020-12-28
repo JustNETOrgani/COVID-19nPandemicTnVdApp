@@ -1,7 +1,7 @@
 import Web3 from 'web3'
 var ethUtil = require('ethereumjs-util')
 
-async function signByAHP (data, accountToUse) {
+async function signByAHP (data, accountToUse, callback) {
   var msg = ethUtil.bufferToHex(Buffer.from(data))
   var from = accountToUse
   console.log('Sending personal sign request to MetaMask')
@@ -15,8 +15,13 @@ async function signByAHP (data, accountToUse) {
   }, function (err, result) {
     if (err) return console.error(err)
     if (result.error) return console.error(result.error)
-    console.log('PERSONAL SIGNED:' + JSON.stringify(result.result))
+    // console.log('PERSONAL SIGNED:' + JSON.stringify(result.result))
+    callback(JSON.stringify(result.result))
   })
 }
 
-export default signByAHP
+signByAHP('data', 'accountToUse', function (sig) {
+  console.log('Signature: ', sig)
+})
+
+export { signByAHP }

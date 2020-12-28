@@ -88,7 +88,8 @@
 
 <script>
 import ethEnabled from '@/assets/js/web3nMetaMask'
-import signByAHP from '@/assets/js/sigHelperFns'
+// import signByAHP from '@/assets/js/sigHelperFns'
+import * as signingByAHP from '@/assets/js/sigHelperFns'
 import { generateKeyPair, asymmEncrypt } from '@/assets/js/asymmEncrypt'
 import getHash from '@/assets/js/hashFunc'
 
@@ -171,10 +172,7 @@ export default {
             getHash(EcDR).then(res => {
               this.hEcDR = res
               // AHP signs hEcDR to get signature. --->AHPsignature
-              signByAHP(this.hEcDR, this.currentEthAddress).then(res => {
-                this.sigOfAHP = res
-                console.log('AHP signature: ', this.sigOfAHP)
-              })
+              this.signatureOfAHP()
             })
             // Push EcDR to IPFS to get IPFShash
             // Person signs IPFShash to get signature.
@@ -216,6 +214,13 @@ export default {
       var bytes = new Uint8Array(Math.ceil(hexString.length / 2))
       for (var i = 0; i < bytes.length; i++) bytes[i] = parseInt(hexString.substr(i * 2, 2), 16)
       return bytes
+    },
+    signatureOfAHP () {
+      // eslint-disable-next-line no-return-assign
+      signingByAHP.signByAHP(this.hEcDR, this.currentEthAddress, (sig) => {
+        this.sigOfAHP = sig
+        console.log('AHP sig.: ', this.sigOfAHP)
+      })
     }
   }
 }
