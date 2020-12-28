@@ -36,9 +36,11 @@
                                 </el-select>
                             </el-form-item>
                             <br>
-                            <el-form-item label="**AHP's consent**" prop="authCheckBox">
-                                <el-checkbox v-model="onboardPerson.authCheckBox">I fully understand the implication of this action.</el-checkbox>
-                            </el-form-item>
+                            <el-row>
+                              <el-form-item label="**AHP's consent**" prop="authCheckBox">
+                                  <el-checkbox v-model="onboardPerson.authCheckBox">I fully understand the implication of this action.</el-checkbox>
+                              </el-form-item>
+                            </el-row>
                         </el-form>
                     </div>
                 </el-col>
@@ -70,10 +72,17 @@
                                 </el-col>
                             </el-row>
                             <el-row>
-                                <el-col :span="10" :offset="0">
+                                <el-col :span="5" :offset="0">
                                     <p class="computedLabels">Person signature:</p>
-                                    <p class="formattedString">{{signature}}</p>
                                 </el-col>
+                                <el-col :span="5" :offset="0">
+                                    <p class="formattedString">{{signature_substring}}</p>
+                                </el-col>
+                            </el-row>
+                            <el-row>
+                              <el-col :span="4" :offset="8">
+                                <el-button type="info" round :loading="personSigGenLoadBtn" @click="getPersonSig()">Get Person signature</el-button>
+                              </el-col>
                             </el-row>
                     </fieldset>
                 </el-col>
@@ -118,15 +127,19 @@ export default {
       EcDR: '',
       hEcDR: '',
       IPFSHashOfhEcDR: '',
-      signature: '',
+      fullSignature: '',
+      signature_substring: '',
       address: '',
       currentEthAddress: '',
+      prevAccount: '',
+      personAccount: '',
       pubKeyOfPerson: '',
       AHPkeyGenerated: '',
       sigOfAHP: '',
       // Loading states
       personOnboardLoadBtn: false,
       loadingPOnboardingPage: true,
+      personSigGenLoadBtn: false,
       // Account change status.
       accountChangeStatus: false,
       // Dialogs.
@@ -157,7 +170,33 @@ export default {
       })
     }
   },
+  watch: {
+    'currentEthAddress' () {
+      this.switchAccount()
+    }
+  },
   methods: {
+    switchAccount () {
+      window.ethereum.on('accountsChanged', function (accounts) {
+        this.personAccount = accounts[0]
+        console.log('Selected account: ', this.personAccount)
+        if (this.prevAccount === this.personAccount) {
+          console.log('Same account in use')
+          this.accountSwitchDialogVisible = true
+          this.$message({
+            message: 'Same account selected. Please, switch',
+            type: 'warning'
+          })
+        } else {
+          console.log('Account switched')
+          // this.$message('Account switched successfully.')
+          // this.address = this.currentEthAddress
+          // console.log('Now using1: ', this.address)
+          console.log('Now using2: ', this.personAccount)
+          this.accountChangeStatus = true
+        }
+      })
+    },
     backToPrvPg () {
       this.$router.push('healthFacIndexPg')
     },
@@ -240,7 +279,7 @@ export default {
     },
     signatureOfAHP () {
       // eslint-disable-next-line no-return-assign
-      signingByAHP.signByAHP(this.hEcDR, this.currentEthAddress, (sig) => {
+      signingByAHP.signatureGen(this.hEcDR, this.currentEthAddress, (sig) => {
         this.sigOfAHP = sig
         console.log('AHP sig.: ', this.sigOfAHP)
         // Get daa ready for upload to IPFS.
@@ -260,18 +299,41 @@ export default {
         this.$message('File upload to IPFS successful.')
         this.IPFSHashOfhEcDR = res[0].hash
         if (this.accountChangeStatus === false) {
+          this.prevAccount = this.currentEthAddress
           this.accountSwitchDialogVisible = true
-          window.ethereum.on('accountsChanged', function (accounts) {
-            this.currentEthAddress = accounts[0]
-            console.log('New account: ', this.currentEthAddress)
-            this.accountChangeStatus = true
-          })
         }
       })
     },
     prepareDataToIPFS () {
       var encryptedDataWithAHPsignature = { encryptedData: this.EcDR, signedByAHP: this.sigOfAHP }
       return encryptedDataWithAHPsignature
+    },
+    getPersonSig () {
+      // console.log('Address in use1: ', this.address)
+      console.log('Address in use2: ', this.personAccount)
+      if (this.currentEthAddress !== '') {
+        this.personSigGenLoadBtn = true
+        this.signatureOfPerson()
+      } else {
+        this.$message({
+          message: 'Account switching not done.',
+          type: 'warning'
+        })
+      }
+    },
+    signatureOfPerson () {
+      console.log('Signing using address: ', this.personAccount)
+      console.log('Signing on data: ', this.IPFSHashOfhEcDR)
+      // eslint-disable-next-line no-return-assign
+      signingByAHP.signatureGen(this.IPFSHashOfhEcDR, this.personAccount, (sig) => {
+        this.address = this.personAccount
+        this.fullSignature = sig
+        // Prepare signature substring due to length.
+        this.signature_substring = (sig.substring(0, 25) + '...' + sig.substr(sig.length - 25)).replace(/"/g, '') // Remove the double quotes.
+        console.log('Person signature acquired.')
+        this.personSigGenLoadBtn = false
+        console.log('Person sig.: ', this.fullSignature)
+      })
     }
   }
 }
