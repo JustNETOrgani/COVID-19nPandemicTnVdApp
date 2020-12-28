@@ -88,10 +88,11 @@
 
 <script>
 import ethEnabled from '@/assets/js/web3nMetaMask'
-// import signByAHP from '@/assets/js/sigHelperFns'
 import * as signingByAHP from '@/assets/js/sigHelperFns'
 import { generateKeyPair, asymmEncrypt } from '@/assets/js/asymmEncrypt'
 import getHash from '@/assets/js/hashFunc'
+// import convertIPFSstringToBytes from '@/assets/js/convertIPFShash.js'
+const ipfs = new window.Ipfs()
 
 export default {
   data () {
@@ -103,6 +104,7 @@ export default {
         authCheckBox: ''
       },
       // Dynamic variables.
+      EcDR: '',
       hEcDR: '',
       IPFSHashOfhEcDR: '',
       signature: '',
@@ -166,15 +168,14 @@ export default {
             }
             console.log('Data: ', data)
             // Encrypt data using user public key ---> EcDR
-            var EcDR = asymmEncrypt(this.AHPkeyGenerated, data, this.pubKeyOfPerson)
-            console.log('EcDR: ', EcDR)
+            this.EcDR = asymmEncrypt(this.AHPkeyGenerated, data, this.pubKeyOfPerson)
+            console.log('EcDR: ', this.EcDR)
             // Hash encrypted data---> hEcDR.
-            getHash(EcDR).then(res => {
+            getHash(this.EcDR).then(res => {
               this.hEcDR = res
               // AHP signs hEcDR to get signature. --->AHPsignature
-              this.signatureOfAHP()
+              this.signatureOfAHP() // Includes push to IPFS.
             })
-            // Push EcDR to IPFS to get IPFShash
             // Person signs IPFShash to get signature.
             // Anchor data onto the blockchain via Smart Contract.
             this.personOnboardLoadBtn = false
@@ -220,7 +221,27 @@ export default {
       signingByAHP.signByAHP(this.hEcDR, this.currentEthAddress, (sig) => {
         this.sigOfAHP = sig
         console.log('AHP sig.: ', this.sigOfAHP)
+        // Get daa ready for upload to IPFS.
+        var preparedData = this.prepareDataToIPFS()
+        // Push encryptedDataWithAHPsignature to IPFS.
+        this.pushToIPFShub(preparedData)
       })
+    },
+    pushToIPFShub (encryptedDataWithAHPsignature) {
+      var encryptedDataToSendToJviaIPFS = JSON.stringify({ encryptedDataWithAHPsignature })
+      // console.log('Connecting to IPFS.')
+      const MyBuffer = window.Ipfs.Buffer
+      var dataToBuffer = MyBuffer.from(encryptedDataToSendToJviaIPFS)
+      // console.log('Buffer conversion done.')
+      ipfs.add(dataToBuffer).then(res => {
+        console.log('Data upload to IPFS sucessful')
+        this.$message('File upload to IPFS successful.')
+        this.IPFSHashOfhEcDR = res[0].hash
+      })
+    },
+    prepareDataToIPFS () {
+      var encryptedDataWithAHPsignature = { encryptedData: this.EcDR, signedByAHP: this.sigOfAHP }
+      return encryptedDataWithAHPsignature
     }
   }
 }
