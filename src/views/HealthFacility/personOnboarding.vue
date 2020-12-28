@@ -170,8 +170,12 @@ export default {
             // Hash encrypted data---> hEcDR.
             getHash(EcDR).then(res => {
               this.hEcDR = res
+              // AHP signs hEcDR to get signature. --->AHPsignature
+              signByAHP(this.hEcDR, this.currentEthAddress).then(res => {
+                this.sigOfAHP = res
+                console.log('AHP signature: ', this.sigOfAHP)
+              })
             })
-            // AHP signs hEcDR to get signature. --->AHPsignature
             // Push EcDR to IPFS to get IPFShash
             // Person signs IPFShash to get signature.
             // Anchor data onto the blockchain via Smart Contract.
@@ -212,11 +216,6 @@ export default {
       var bytes = new Uint8Array(Math.ceil(hexString.length / 2))
       for (var i = 0; i < bytes.length; i++) bytes[i] = parseInt(hexString.substr(i * 2, 2), 16)
       return bytes
-    },
-    signatureOfAHP (msgToSign, currentAccount) {
-      signByAHP(msgToSign, currentAccount).then(res => {
-        this.signatureOfAHP = res
-      })
     }
   }
 }

@@ -1,15 +1,13 @@
-import ethUtil from 'ethereumjs-util'
 import Web3 from 'web3'
+var ethUtil = require('ethereumjs-util')
 
-function signByAHP (data, accountToUse) {
-  var msg = ethUtil.bufferToHex(Buffer.from(data, 'utf8'))
+async function signByAHP (data, accountToUse) {
+  var msg = ethUtil.bufferToHex(Buffer.from(data))
   var from = accountToUse
-  console.log('CLICKED, SENDING PERSONAL SIGN REQ')
+  console.log('Sending personal sign request to MetaMask')
   var params = [msg, from]
   var method = 'personal_sign'
-
   window.web3 = new Web3(window.ethereum)
-
   window.web3.currentProvider.sendAsync({
     method,
     params,
