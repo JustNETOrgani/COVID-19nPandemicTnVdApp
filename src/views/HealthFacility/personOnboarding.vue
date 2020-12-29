@@ -286,14 +286,12 @@ export default {
       signingByAHP.signatureGen(this.hEcDR, this.currentEthAddress, (sig) => {
         this.sigOfAHP = sig
         console.log('AHP sig.: ', this.sigOfAHP)
-        // Get daa ready for upload to IPFS.
-        var preparedData = this.prepareDataToIPFS()
         // Push encryptedDataWithAHPsignature to IPFS.
-        this.pushToIPFShub(preparedData)
+        this.pushToIPFShub()
       })
     },
-    pushToIPFShub (encryptedDataWithAHPsignature) {
-      var encryptedDataToSendToJviaIPFS = JSON.stringify({ encryptedDataWithAHPsignature })
+    pushToIPFShub () {
+      var encryptedDataToSendToJviaIPFS = JSON.stringify({ encryptedData: this.EcDR, signedByAHP: this.sigOfAHP })
       // console.log('Connecting to IPFS.')
       const MyBuffer = window.Ipfs.Buffer
       var dataToBuffer = MyBuffer.from(encryptedDataToSendToJviaIPFS)
@@ -307,10 +305,6 @@ export default {
           this.accountSwitchDialogVisible = true
         }
       })
-    },
-    prepareDataToIPFS () {
-      var encryptedDataWithAHPsignature = { encryptedData: this.EcDR, signedByAHP: this.sigOfAHP }
-      return encryptedDataWithAHPsignature
     },
     getPersonSig () {
       if (this.hEcDR !== '' && this.IPFSHashOfhEcDR !== '') {
