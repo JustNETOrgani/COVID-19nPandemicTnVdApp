@@ -131,7 +131,6 @@ export default {
       signature_substring: '',
       address: '',
       currentEthAddress: '',
-      prevAccount: '',
       personAccount: '',
       pubKeyOfPerson: '',
       AHPkeyGenerated: '',
@@ -177,24 +176,16 @@ export default {
   },
   methods: {
     switchAccount () {
+      var myRoot = this // Ensure all this or vue global variables can be accessed within this fucntion via myRoot.
       window.ethereum.on('accountsChanged', function (accounts) {
-        this.personAccount = accounts[0]
-        console.log('Selected account: ', this.personAccount)
-        if (this.prevAccount === this.personAccount) {
-          console.log('Same account in use')
-          this.accountSwitchDialogVisible = true
-          this.$message({
-            message: 'Same account selected. Please, switch',
-            type: 'warning'
-          })
-        } else {
-          console.log('Account switched')
-          // this.$message('Account switched successfully.')
-          // this.address = this.currentEthAddress
-          // console.log('Now using1: ', this.address)
-          console.log('Now using2: ', this.personAccount)
-          this.accountChangeStatus = true
-        }
+        myRoot.personAccount = accounts[0]
+        console.log('Selected account: ', myRoot.personAccount)
+        myRoot.$message({
+          message: 'Account switched successfully..',
+          type: 'success'
+        })
+        console.log('Account switched')
+        myRoot.accountChangeStatus = true
       })
     },
     backToPrvPg () {
@@ -299,7 +290,6 @@ export default {
         this.$message('File upload to IPFS successful.')
         this.IPFSHashOfhEcDR = res[0].hash
         if (this.accountChangeStatus === false) {
-          this.prevAccount = this.currentEthAddress
           this.accountSwitchDialogVisible = true
         }
       })
@@ -309,21 +299,20 @@ export default {
       return encryptedDataWithAHPsignature
     },
     getPersonSig () {
-      // console.log('Address in use1: ', this.address)
-      console.log('Address in use2: ', this.personAccount)
-      if (this.currentEthAddress !== '') {
+      if (this.personAccount !== '') {
+        console.log('If passed')
         this.personSigGenLoadBtn = true
         this.signatureOfPerson()
       } else {
         this.$message({
-          message: 'Account switching not done.',
+          message: 'Account switching not done. Switch account now.',
           type: 'warning'
         })
+        this.personSigGenLoadBtn = false
       }
     },
     signatureOfPerson () {
-      console.log('Signing using address: ', this.personAccount)
-      console.log('Signing on data: ', this.IPFSHashOfhEcDR)
+      console.log('Signing using address: ', this.personAccount, 'on data: ', this.IPFSHashOfhEcDR)
       // eslint-disable-next-line no-return-assign
       signingByAHP.signatureGen(this.IPFSHashOfhEcDR, this.personAccount, (sig) => {
         this.address = this.personAccount
@@ -333,6 +322,9 @@ export default {
         console.log('Person signature acquired.')
         this.personSigGenLoadBtn = false
         console.log('Person sig.: ', this.fullSignature)
+      }).catch(err => {
+        console.log('Error generating signature.', err)
+        this.$message.error('Oops, Error getting person\'s signature')
       })
     }
   }
@@ -370,7 +362,7 @@ legend {
   color: rgb(113, 140, 189);
 }
 .formattedString{
-  font-size: 0.73rem;
+  font-size: 0.71rem;
   font-style: italic;
   color: rgb(95, 64, 116);
 }

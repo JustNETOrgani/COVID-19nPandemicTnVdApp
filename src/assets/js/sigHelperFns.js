@@ -13,8 +13,8 @@ async function signatureGen (data, accountToUse, callback) {
     params,
     from
   }, function (err, result) {
-    if (err) return console.error(err)
-    if (result.error) return console.error(result.error)
+    if (err) return console.log('Signature error: ', err)
+    if (result.error) return console.log('Sorry! Error with signature result: ', result.error)
     // console.log('PERSONAL SIGNED:' + JSON.stringify(result.result))
     callback(JSON.stringify(result.result))
   })
