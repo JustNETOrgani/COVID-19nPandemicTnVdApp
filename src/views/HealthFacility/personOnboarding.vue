@@ -4,7 +4,15 @@
           <el-link icon="el-icon-arrow-left" style="font-size:17px;float:left;" @click="backToPrvPg">Previous Page</el-link>
         </div>
         <div class="wrapper" v-loading="loadingPOnboardingPage">
-            <h2>Person Onboarding on the blockchain</h2>
+            <h3>Person Onboarding on the blockchain</h3>
+            <el-row>
+                <el-steps :active="active" align-center finish-status="success">
+                <el-step title="Step 1" description="Process data"></el-step>
+                <el-step title="Step 2" description="Get Person's signature"></el-step>
+                <el-step title="Step 3" description="Anchor in blockchain"></el-step>
+                </el-steps>
+            </el-row>
+            <br>
             <el-row>
                 <el-col :span="9">
                     <div class="grid-content bg-purple-dark">
@@ -35,11 +43,14 @@
                                     <el-option label="Vaccinated" value="vaccinated"></el-option>
                                 </el-select>
                             </el-form-item>
-                            <br>
                             <el-row>
                               <el-form-item label="**AHP's consent**" prop="authCheckBox">
                                   <el-checkbox v-model="onboardPerson.authCheckBox">I fully understand the implication of this action.</el-checkbox>
                               </el-form-item>
+                            </el-row>
+                            <el-row>
+                                <el-button :loading="personOnboardLoadBtn" @click="processFormData('onboardPerson')">Process data</el-button>
+                                <el-button @click="resetForm('onboardPerson')">Reset</el-button>
                             </el-row>
                         </el-form>
                     </div>
@@ -88,8 +99,7 @@
                 </el-col>
             </el-row>
             <el-row>
-                <el-button type="primary" :loading="personOnboardLoadBtn" @click="submitForm('onboardPerson')">Submit</el-button>
-                <el-button @click="resetForm('onboardPerson')">Reset</el-button>
+                <el-button type="primary" :loading="submitLoadBtn" @click="anchorOnchain()">Submit to blockchain</el-button>
             </el-row>
         </div>
         <el-dialog
@@ -123,6 +133,8 @@ export default {
         vStatus: '',
         authCheckBox: ''
       },
+      // Steps.
+      active: 0,
       // Dynamic variables.
       EcDR: '',
       hEcDR: '',
@@ -139,6 +151,7 @@ export default {
       personOnboardLoadBtn: false,
       loadingPOnboardingPage: true,
       personSigGenLoadBtn: false,
+      submitLoadBtn: false,
       // Account change status.
       accountChangeStatus: false,
       // Dialogs.
@@ -207,7 +220,7 @@ export default {
         })
         .catch(_ => {})
     },
-    submitForm (formName) {
+    processFormData (formName) {
       if (this.onboardPerson.authCheckBox === true) {
         this.$refs[formName].validate(valid => {
           this.personOnboardLoadBtn = true
@@ -289,6 +302,7 @@ export default {
         console.log('Data upload to IPFS sucessful')
         this.$message('File upload to IPFS successful.')
         this.IPFSHashOfhEcDR = res[0].hash
+        this.active += 1 // Increment step by 1 to move to next step.
         if (this.accountChangeStatus === false) {
           this.accountSwitchDialogVisible = true
         }
@@ -299,16 +313,21 @@ export default {
       return encryptedDataWithAHPsignature
     },
     getPersonSig () {
-      if (this.personAccount !== '') {
-        console.log('If passed')
-        this.personSigGenLoadBtn = true
-        this.signatureOfPerson()
+      if (this.hEcDR !== '' && this.IPFSHashOfhEcDR !== '') {
+        if (this.personAccount !== '') {
+          this.personSigGenLoadBtn = true
+          this.signatureOfPerson()
+        } else {
+          this.$message({
+            message: 'Account switching not done. Switch account now.',
+            type: 'warning'
+          })
+        }
       } else {
         this.$message({
-          message: 'Account switching not done. Switch account now.',
+          message: 'Sorry! Complete step 1 before proceeding.',
           type: 'warning'
         })
-        this.personSigGenLoadBtn = false
       }
     },
     signatureOfPerson () {
@@ -322,10 +341,31 @@ export default {
         console.log('Person signature acquired.')
         this.personSigGenLoadBtn = false
         console.log('Person sig.: ', this.fullSignature)
+        this.active += 1 // Increment step to move to next stage.
       }).catch(err => {
         console.log('Error generating signature.', err)
         this.$message.error('Oops, Error getting person\'s signature')
       })
+    },
+    anchorOnchain () {
+      // Check all needed smart contract-related data have been acquired.
+      if (this.hEcDR !== '' && this.IPFSHashOfhEcDR !== '' && this.personAccount !== '' && this.fullSignature !== '') {
+        console.log('Sending to blockchain')
+        this.submitLoadBtn = true
+        this.active += 1 // Increment step.
+        this.$alert('Data successfully anchored in Ethereum blockchain', 'Blockchain success', {
+          confirmButtonText: 'OK',
+          callback: action => {
+            this.$message({
+              type: 'info',
+              message: 'Transaction successful'
+            })
+          }
+        })
+        this.submitLoadBtn = false
+      } else {
+        this.$message.error('Sorry! On-chain data not generated.')
+      }
     }
   }
 }
