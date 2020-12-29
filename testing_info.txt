@@ -22,3 +22,8 @@ Sample Public Key:	0x5b5886749962925b7a9a72cde71c3bca6eeb83231af66276cae425845d8
 Sample Public Key:  0x2590bfab99298edec2572a0dd4a2325264c4e8ae698d81c3670e370fa1be7315
 
 **************************************************************************************
+
+hEcDR: 
+IPFS hash: 
+Person Address: 
+Sig.:  
