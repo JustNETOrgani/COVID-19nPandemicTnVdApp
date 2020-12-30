@@ -39,6 +39,24 @@
                 </el-col>
             </el-row>
         </div>
+        <el-dialog
+            title="Covid-19 test/vaccination status verification"
+            :visible.sync="dialogVisible" width="40%">
+            <span id="IPFShashNotice">Verifying using IPFS hash: {{enteredIPFShash}}</span>
+            <br />
+            <span id="BlockchainInUse">Blockchain in use: Ethereum</span>
+            <el-steps v-loading="stepLoading" direction="vertical" :active="step">
+                <template v-for="(item, index) in VerifyResult">
+                    <el-step
+                        :key="index"
+                        :title="item.step"
+                        :description="item.name"
+                        :status="item.status"
+                        >
+                    </el-step>
+                </template>
+            </el-steps>
+        </el-dialog>
     </div>
 </template>
 
@@ -55,11 +73,19 @@ export default {
       verificationForm: {
         ifpsHash: ''
       },
+      enteredIPFShash: '',
       hEcDR: '',
       sigOnIPFShash: '',
       fullSignature: '',
       personAccount: '',
+      VerifyResult: [],
+      // Loading states
       verifyBtnLoadState: false,
+      stepLoading: false,
+      // Step
+      step: 1,
+      // Dialog.
+      dialogVisible: false,
       rules: {
         ifpsHash: [
           { required: true, message: 'Please input IPFS hash of the paper', trigger: 'blur' },
@@ -96,26 +122,74 @@ export default {
           this.$refs[formName].validate(valid => {
             this.verifyBtnLoadState = true
             if (valid) {
+              this.dialogVisible = true
+              // this.stepLoading = true
+              // Create array object for steps.
+              this.VerifyResult = {
+                1: { step: '1', name: 'Getting encrypted data', status: 'wait' },
+                2: { step: '2', name: 'Hashing encrypted data', status: 'wait' },
+                3: { step: '3', name: 'Acquiring Person signature', status: 'wait' },
+                4: { step: '4', name: 'Verifying in Smart Contract', status: 'wait' }
+              }
               var data = {
                 ipfsHash: this.verificationForm.ifpsHash
               }
+              this.enteredIPFShash = data.ipfsHash
               // Steps ---> TODO
               // Acquire encrypted data on IPFS.
               ipfs.cat(data.ipfsHash).then(retrievedData => {
                 var EcDRwithSig = JSON.parse(retrievedData.toString()) // Convert to string and parse as JSON object.
-                console.log('Encrypted data: ', EcDRwithSig)
-                // Hash the EcDR.
-                getHash(EcDRwithSig.encryptedData).then(res => {
-                  this.hEcDR = res
-                  // Allow user to sign IPFS hash.
-                  signingByAHP.signatureGen(data.ipfsHash, this.personAccount, (sig) => {
-                    this.fullSignature = sig
-                    this.sigOnIPFShash = (sig.substring(0, 25) + '...' + sig.substr(sig.length - 25)).replace(/"/g, '') // Remove the double quotes.
-                    console.log('Person sig.: ', this.fullSignature)
-                    // Verify on-chain
+                var currentStep = 0
+                var keyToUse = Object.keys(this.VerifyResult)[currentStep]
+                if (Object.keys(EcDRwithSig).length > 0 && 'encryptedData' in EcDRwithSig) {
+                  // Data in IPFS pulled object.
+                  console.log('Encrypted data: ', EcDRwithSig)
+                  // Change status.
+                  this.VerifyResult[keyToUse].status = 'success'
+                  // Hash the EcDR.
+                  getHash(EcDRwithSig.encryptedData).then(res => {
+                    this.hEcDR = res
+                    currentStep += 1
+                    keyToUse = Object.keys(this.VerifyResult)[currentStep]
+                    if (this.hEcDR.length > 0) {
+                      // Hashing was successful.
+                      // Change status.
+                      this.VerifyResult[keyToUse].status = 'success'
+                      // Allow user to sign IPFS hash.
+                      signingByAHP.signatureGen(data.ipfsHash, this.personAccount, (sig) => {
+                        this.fullSignature = sig
+                        currentStep += 1
+                        keyToUse = Object.keys(this.VerifyResult)[currentStep]
+                        if (this.fullSignature.length > 0) {
+                          this.sigOnIPFShash = (sig.substring(0, 25) + '...' + sig.substr(sig.length - 25)).replace(/"/g, '') // Remove the double quotes.
+                          console.log('Person sig.: ', this.fullSignature)
+                          // Change status.
+                          this.VerifyResult[keyToUse].status = 'success'
+                          // Verify on-chain
+                          this.verifyBtnLoadState = false
+                        } else {
+                          this.VerifyResult[keyToUse].status = 'error'
+                        }
+                      }).catch(err => {
+                        console.log('Signature error: ', err)
+                        this.$message.error('Oops, Error generating signature.')
+                        this.verifyBtnLoadState = false
+                      })
+                    } else {
+                      this.VerifyResult[keyToUse].status = 'error'
+                    }
+                  }).catch(err => {
+                    console.log('Hashing error: ', err)
+                    this.$message.error('Oops, Error hashing data.')
                     this.verifyBtnLoadState = false
                   })
-                })
+                } else {
+                  this.VerifyResult[keyToUse].status = 'error'
+                }
+              }).catch(err => {
+                console.log('IPFS error: ', err)
+                this.$message.error('Oops, Error pulling data from IPFS.')
+                this.verifyBtnLoadState = false
               })
             } else {
               console.log('Submission error.')
@@ -184,6 +258,15 @@ export default {
 #formattedString{
   font-size: 0.75rem;
   text-align: left;
+  font-style: italic;
+  color: rgb(95, 64, 116);
+}
+#IPFShashNotice{
+  font-size: 0.8rem;
+  color: rgb(113, 140, 189);
+}
+#BlockchainInUse{
+  font-size: 0.9rem;
   font-style: italic;
   color: rgb(95, 64, 116);
 }
