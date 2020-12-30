@@ -43,7 +43,7 @@
 <script>
 import ethEnabled from '@/assets/js/web3nMetaMask'
 import web3 from '@/assets/js/web3Only'
-// import { ABI, contractAddress, suppliedGas } from '@/assets/js/contractABI'
+import { ABI, contractAddress, suppliedGas } from '@/assets/js/contractABI'
 export default {
   // name: 'Home',
   data () {
@@ -105,7 +105,43 @@ export default {
                   ahfAddress: this.ahfRegistForm.ahfAddress
                 }
                 console.log('Registration data: ', data)
-                this.registAHFBtnLoadState = false
+                var blockCovid = new web3.eth.Contract(ABI, contractAddress, { defaultGas: suppliedGas })
+                console.log('Contract instance created.')
+                // Smart contract and other logic continues.
+                try {
+                  blockCovid.methods.registerHealthFacility(data.ahfName, data.ahfAddress).send({
+                    from: this.contractDeployerAccount,
+                    gas: 265000
+                  }).on('transactionHash', (hash) => {
+                    console.log('Trans. hash is: ', hash)
+                  }).on('receipt', (receipt) => {
+                    console.log('Trans. Block Number is: ', receipt.blockNumber)
+                    // Display success note.
+                    this.registAHFBtnLoadState = false
+                    this.$alert('The AHF ' + data.ahfName + ' has successfully been created on BlockCovid.', 'Creation success', {
+                      confirmButtonText: 'OK',
+                      callback: action => {
+                        this.$message({
+                          type: 'info',
+                          message: 'Transaction successful'
+                        })
+                        this.$router.push('managerlanding')
+                      }
+                    })
+                    this.$message({
+                      message: 'AHF successfully created on BlockCovid.',
+                      type: 'success'
+                    })
+                  }).on('error', (error) => {
+                    console.log('Error occured', error)
+                    this.registAHFBtnLoadState = false
+                    this.$message.error('Oops. Eror occured during transaction processing.')
+                  })
+                } catch {
+                  console.log('Sorry! Error occured.')
+                  this.registAHFBtnLoadState = false
+                  this.$message.error('Non-transactional error. Please try again later.')
+                }
               } else {
                 console.log('Submission error.')
                 this.registAHFBtnLoadState = false
