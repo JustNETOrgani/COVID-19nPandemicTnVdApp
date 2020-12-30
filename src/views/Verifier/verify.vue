@@ -64,6 +64,8 @@
 import ethEnabled from '@/assets/js/web3nMetaMask'
 import * as signingByAHP from '@/assets/js/sigHelperFns'
 import getHash from '@/assets/js/hashFunc'
+import web3 from '@/assets/js/web3Only'
+import { ABI, contractAddress, suppliedGas } from '@/assets/js/contractABI'
 const ipfs = new window.Ipfs()
 
 export default {
@@ -79,6 +81,8 @@ export default {
       fullSignature: '',
       personAccount: '',
       VerifyResult: [],
+      verifierAccount: '',
+      accountChangeStatus: false,
       // Loading states
       verifyBtnLoadState: false,
       stepLoading: false,
@@ -109,6 +113,19 @@ export default {
     async getAccount () {
       var accounts = await window.ethereum.request({ method: 'eth_requestAccounts' })
       return accounts
+    },
+    switchAccount () {
+      var myRoot = this // Ensure all this or vue global variables can be accessed within this fucntion via myRoot.
+      window.ethereum.on('accountsChanged', function (accounts) {
+        myRoot.verifierAccount = accounts[0]
+        console.log('Selected account: ', myRoot.verifierAccount)
+        myRoot.$message({
+          message: 'Account switched successfully..',
+          type: 'success'
+        })
+        console.log('Account switched')
+        myRoot.accountChangeStatus = true
+      })
     },
     backToPrvPg () {
       this.$router.push('/')
@@ -166,6 +183,12 @@ export default {
                           // Change status.
                           this.VerifyResult[keyToUse].status = 'success'
                           // Verify on-chain
+                          var blockCovid = new web3.eth.Contract(ABI, contractAddress, { defaultGas: suppliedGas })// End of ABi Code from Remix.
+                          console.log('Contract instance created.')
+                          // Smart contract and other logic continues.
+                          blockCovid.methods.verifyPersonStatus(this.personAccount, data.ipfsHash, this.hEcDR, this.fullSignature).call({ from: this.personAccount }).then(res => {
+                            console.log('Response from Contract: ', res)
+                          })
                           this.verifyBtnLoadState = false
                         } else {
                           this.VerifyResult[keyToUse].status = 'error'
