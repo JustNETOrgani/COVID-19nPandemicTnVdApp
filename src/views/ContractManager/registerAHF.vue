@@ -19,14 +19,14 @@
                             :rules="rules"
                             ref="ahfRegistForm"
                             label-width="180px">
-                           <el-form-item label="**User's consent**" prop="authCheckBox">
-                                <el-checkbox v-model="ahfRegistForm.authCheckBox">I fully understand the implication of this action.</el-checkbox>
-                            </el-form-item>
                             <el-form-item label="Name of AHF" prop="ahfName">
                                 <el-input v-model="ahfRegistForm.ahfName" placeholder="Name of the Aproved Health Facility (AHF)."></el-input>
                             </el-form-item>
                             <el-form-item label="Address of AHF" prop="ahfAddress">
                                 <el-input v-model="ahfRegistForm.ahfAddress" placeholder="Please input Eth address of AHF."></el-input>
+                            </el-form-item>
+                            <el-form-item label="**Manager's consent**" prop="authCheckBox">
+                                <el-checkbox v-model="ahfRegistForm.authCheckBox">I fully understand the implication of this action.</el-checkbox>
                             </el-form-item>
                             <el-form-item>
                                 <el-button type="primary" :loading="registAHFBtnLoadState" @click="submitForm('ahfRegistForm')">Create</el-button>
@@ -41,7 +41,8 @@
 </template>
 
 <script>
-
+import web3 from '@/assets/js/web3'
+// import { ABI, contractAddress, suppliedGas } from '@/assets/js/contractABI'
 export default {
   // name: 'Home',
   data () {
@@ -76,6 +77,43 @@ export default {
     },
     resetForm (formName) {
       this.$refs[formName].resetFields()
+    },
+    submitForm (formName) {
+      if (this.ahfRegistForm.authCheckBox === true) {
+        if (this.ahfNameValidation(this.ahfRegistForm.ahfName) !== 0) {
+          if (web3.utils.isAddress(this.ahfRegistForm.ahfAddress) === true) {
+            this.$refs[formName].validate(valid => {
+              this.registAHFBtnLoadState = true
+              if (valid) {
+                console.log('Valid data.')
+              } else {
+                console.log('Submission error.')
+                this.registAHFBtnLoadState = false
+                return false
+              }
+            })
+          } else {
+            this.$message({
+              message: 'Invalid Ethereum address.',
+              type: 'warning'
+            })
+          }
+        } else {
+          this.$message({
+            message: 'Invalid AHF name.',
+            type: 'warning'
+          })
+        }
+      } else {
+        this.$message('Please check the checkbox')
+      }
+    },
+    ahfNameValidation (input) {
+      if (input === '' || /[^a-zA-Z]/.test(input) === true || input == null) {
+        return 0
+      } else {
+        return 1
+      }
     }
   },
   computed: {
