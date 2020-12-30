@@ -102,11 +102,15 @@ export default {
     if (!ethEnabled()) {
       this.$message('Please install an Ethereum-compatible browser or extension like MetaMask to use this dApp!')
     } else {
-      this.loadingPOnboardingPage = false
       this.getAccount().then(accounts => {
         this.personAccount = accounts[0]
         console.log('Current account: ', this.personAccount)
       })
+    }
+  },
+  watch: {
+    'personAccount' () {
+      this.switchAccount()
     }
   },
   methods: {
@@ -186,6 +190,7 @@ export default {
                           var blockCovid = new web3.eth.Contract(ABI, contractAddress, { defaultGas: suppliedGas })// End of ABi Code from Remix.
                           console.log('Contract instance created.')
                           // Smart contract and other logic continues.
+                          // This is call operation. Any account can be used. It cost zero Eth.
                           blockCovid.methods.verifyPersonStatus(this.personAccount, data.ipfsHash, this.hEcDR, this.fullSignature).call({ from: this.personAccount }).then(res => {
                             console.log('Response from Contract: ', res)
                           })
