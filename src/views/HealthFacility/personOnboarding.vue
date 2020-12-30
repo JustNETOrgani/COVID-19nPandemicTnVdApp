@@ -121,6 +121,8 @@ import ethEnabled from '@/assets/js/web3nMetaMask'
 import * as signingByAHP from '@/assets/js/sigHelperFns'
 import { generateKeyPair, asymmEncrypt } from '@/assets/js/asymmEncrypt'
 import getHash from '@/assets/js/hashFunc'
+import web3 from '@/assets/js/web3Only'
+import { ABI, contractAddress, suppliedGas } from '@/assets/js/contractABI'
 // import convertIPFSstringToBytes from '@/assets/js/convertIPFShash.js'
 const ipfs = new window.Ipfs()
 
@@ -346,16 +348,44 @@ export default {
       if (this.hEcDR !== '' && this.IPFSHashOfhEcDR !== '' && this.personAccount !== '' && this.fullSignature !== '') {
         console.log('Sending to blockchain')
         this.submitLoadBtn = true
-        this.active += 1 // Increment step.
-        this.$alert('Data successfully anchored in Ethereum blockchain', 'Blockchain success', {
-          confirmButtonText: 'OK',
-          callback: action => {
-            this.$message({
-              type: 'info',
-              message: 'Transaction successful'
+        var blockCovid = new web3.eth.Contract(ABI, contractAddress, { defaultGas: suppliedGas })
+        console.log('Contract instance created.')
+        // Smart contract and other logic continues.
+        try {
+          blockCovid.methods.personOnboarding(this.personAccount, this.IPFSHashOfhEcDR, this.hEcDR, this.onboardPerson.tStatus, this.onboardPerson.vStatus, this.fullSignature).send({
+            from: this.currentEthAddress,
+            gas: 400000
+          }).on('transactionHash', (hash) => {
+            console.log('Trans. hash is: ', hash)
+          }).on('receipt', (receipt) => {
+            console.log('Trans. Block Number is: ', receipt.blockNumber)
+            // Display success note.
+            this.active += 1 // Increment step.
+            this.$alert('Person successfully anchored on BlockCovid.', 'Creation success', {
+              confirmButtonText: 'OK',
+              callback: action => {
+                this.$message({
+                  type: 'info',
+                  message: 'Transaction successful'
+                })
+                this.$router.push('healthFacIndexPg')
+              }
             })
-          }
-        })
+            this.$message({
+              message: 'Person successfully created on BlockCovid.',
+              type: 'success'
+            })
+            this.submitLoadBtn = false
+          }).on('error', (error) => {
+            console.log('Error occured', error)
+            this.submitLoadBtn = false
+            this.$message.error('Oops. Eror occured during transaction processing.')
+          })
+        } catch {
+          console.log('Sorry! Error occured.')
+          this.submitLoadBtn = false
+          this.$message.error('Non-transactional error. Please try again later.')
+        }
         this.submitLoadBtn = false
       } else {
         this.$message.error('Sorry! On-chain data not generated.')
