@@ -41,7 +41,8 @@
 </template>
 
 <script>
-import web3 from '@/assets/js/web3'
+import ethEnabled from '@/assets/js/web3nMetaMask'
+import web3 from '@/assets/js/web3Only'
 // import { ABI, contractAddress, suppliedGas } from '@/assets/js/contractABI'
 export default {
   // name: 'Home',
@@ -50,9 +51,10 @@ export default {
       ahfRegistForm: {
         authCheckBox: '',
         ahfName: '',
-        ahfAddress: '',
-        registAHFBtnLoadState: false
+        ahfAddress: ''
       },
+      registAHFBtnLoadState: false,
+      contractDeployerAccount: '',
       rules: {
         authCheckBox: [
           { required: true, message: 'Please check the checkbox', trigger: 'blur' }
@@ -69,9 +71,21 @@ export default {
     }
   },
   created () {
-
+    if (!ethEnabled()) {
+      this.$message('Please install an Ethereum-compatible browser or extension like MetaMask to use this dApp!')
+    } else {
+      this.loadingPOnboardingPage = false
+      this.getAccount().then(accounts => {
+        this.contractDeployerAccount = accounts[0]
+        console.log('Current account: ', this.contractDeployerAccount)
+      })
+    }
   },
   methods: {
+    async getAccount () {
+      var accounts = await window.ethereum.request({ method: 'eth_requestAccounts' })
+      return accounts
+    },
     backToPrvPg () {
       this.$router.push('managerlanding')
     },
@@ -86,6 +100,12 @@ export default {
               this.registAHFBtnLoadState = true
               if (valid) {
                 console.log('Valid data.')
+                var data = {
+                  ahfName: this.ahfRegistForm.ahfName,
+                  ahfAddress: this.ahfRegistForm.ahfAddress
+                }
+                console.log('Registration data: ', data)
+                this.registAHFBtnLoadState = false
               } else {
                 console.log('Submission error.')
                 this.registAHFBtnLoadState = false
