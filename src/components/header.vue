@@ -1,6 +1,6 @@
 <template>
   <div class="header">
-    <img class="logo" src="../assets/imgs/app_logo.png" />
+    <img class="logo" src="../assets/imgs/blockCovidImg.png" />
     <div class="menu">
       <p id="appHeadingOne">Privacy-preserving Covid-19 test result and vaccination provenance based on Blockchain and Smart Contract</p>
     </div>
