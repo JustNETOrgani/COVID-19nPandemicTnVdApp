@@ -118,7 +118,7 @@
 
 <script>
 import ethEnabled from '@/assets/js/web3nMetaMask'
-import * as signingByAHP from '@/assets/js/sigHelperFns'
+import * as signatureGenerator from '@/assets/js/sigHelperFns'
 import { generateKeyPair, asymmEncrypt } from '@/assets/js/asymmEncrypt'
 import getHash from '@/assets/js/hashFunc'
 import web3 from '@/assets/js/web3Only'
@@ -285,7 +285,7 @@ export default {
     },
     signatureOfAHP () {
       // eslint-disable-next-line no-return-assign
-      signingByAHP.signatureGen(this.hEcDR, this.currentEthAddress, (sig) => {
+      signatureGenerator.signatureGen(this.hEcDR, this.currentEthAddress, (sig) => {
         this.sigOfAHP = sig
         console.log('AHP sig.: ', this.sigOfAHP)
         // Push encryptedDataWithAHPsignature to IPFS.
@@ -329,7 +329,7 @@ export default {
     signatureOfPerson () {
       console.log('Signing using address: ', this.personAccount, 'on data: ', this.IPFSHashOfhEcDR)
       // eslint-disable-next-line no-return-assign
-      signingByAHP.signatureGen(this.IPFSHashOfhEcDR, this.personAccount, (sig) => {
+      signatureGenerator.signatureGen(this.IPFSHashOfhEcDR, this.personAccount, (sig) => {
         this.address = this.personAccount
         this.fullSignature = sig
         // Prepare signature substring due to length.
