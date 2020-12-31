@@ -204,6 +204,7 @@ export default {
                                 title: 'Failed proof',
                                 message: 'Sorry! You failed blockchain verification.'
                               })
+                              this.getUserChoice()
                             } else {
                               // Person passed. Display status.
                               this.VerifyResult[keyToUse].status = 'success'
@@ -221,23 +222,7 @@ export default {
                                     type: 'info',
                                     message: 'Successful data retrieval'
                                   })
-                                  this.$confirm('Do you want to verify another person?', 'Information needed', {
-                                    confirmButtonText: 'Yes',
-                                    cancelButtonText: 'No',
-                                    type: 'info'
-                                  }).then(() => {
-                                    this.$message({
-                                      type: 'success',
-                                      message: 'Awaiting new input'
-                                    })
-                                    window.location.reload() // Reload page.
-                                  }).catch(() => {
-                                    this.$message({
-                                      type: 'info',
-                                      message: 'Redirecting to home page'
-                                    })
-                                    this.$router.push('/')
-                                  })
+                                  this.getUserChoice()
                                 }
                               })
                             }
@@ -249,6 +234,7 @@ export default {
                               message: 'Sorry! You failed blockchain checks.'
                             })
                             this.verifyBtnLoadState = false
+                            this.getUserChoice()
                           })
                         } else {
                           this.VerifyResult[keyToUse].status = 'error'
@@ -308,6 +294,25 @@ export default {
       } else {
         return 1
       }
+    },
+    getUserChoice () {
+      this.$confirm('Do you want to verify another person?', 'Information needed', {
+        confirmButtonText: 'Yes',
+        cancelButtonText: 'No',
+        type: 'info'
+      }).then(() => {
+        this.$message({
+          type: 'success',
+          message: 'Awaiting new input'
+        })
+        window.location.reload() // Reload page.
+      }).catch(() => {
+        this.$message({
+          type: 'info',
+          message: 'Redirecting to home page'
+        })
+        this.$router.push('/')
+      })
     }
   },
   computed: {
