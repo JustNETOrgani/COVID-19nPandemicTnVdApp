@@ -62,7 +62,7 @@
 
 <script>
 import ethEnabled from '@/assets/js/web3nMetaMask'
-import * as signingByAHP from '@/assets/js/sigHelperFns'
+import * as signatureGenerator from '@/assets/js/sigHelperFns'
 import getHash from '@/assets/js/hashFunc'
 import web3 from '@/assets/js/web3Only'
 import { ABI, contractAddress, suppliedGas } from '@/assets/js/contractABI'
@@ -79,9 +79,8 @@ export default {
       hEcDR: '',
       sigOnIPFShash: '',
       fullSignature: '',
-      personAccount: '',
+      currentAddress: '',
       VerifyResult: [],
-      verifierAccount: '',
       accountChangeStatus: false,
       // Loading states
       verifyBtnLoadState: false,
@@ -103,13 +102,13 @@ export default {
       this.$message('Please install an Ethereum-compatible browser or extension like MetaMask to use this dApp!')
     } else {
       this.getAccount().then(accounts => {
-        this.personAccount = accounts[0]
-        console.log('Current account: ', this.personAccount)
+        this.currentAddress = accounts[0]
+        console.log('Current account: ', this.currentAddress)
       })
     }
   },
   watch: {
-    'personAccount' () {
+    'currentAddress' () {
       this.switchAccount()
     }
   },
@@ -121,10 +120,10 @@ export default {
     switchAccount () {
       var myRoot = this // Ensure all this or vue global variables can be accessed within this fucntion via myRoot.
       window.ethereum.on('accountsChanged', function (accounts) {
-        myRoot.verifierAccount = accounts[0]
-        console.log('Selected account: ', myRoot.verifierAccount)
+        myRoot.currentAddress = accounts[0]
+        console.log('Selected account: ', myRoot.currentAddress)
         myRoot.$message({
-          message: 'Account switched successfully..',
+          message: 'Account switched successfully.',
           type: 'success'
         })
         console.log('Account switched')
@@ -177,7 +176,7 @@ export default {
                       // Change status.
                       this.VerifyResult[keyToUse].status = 'success'
                       // Allow user to sign IPFS hash.
-                      signingByAHP.signatureGen(data.ipfsHash, this.personAccount, (sig) => {
+                      signatureGenerator.signatureGen(data.ipfsHash, this.currentAddress, (sig) => {
                         this.fullSignature = sig
                         currentStep += 1
                         keyToUse = Object.keys(this.VerifyResult)[currentStep]
@@ -189,14 +188,73 @@ export default {
                           // Verify on-chain
                           var blockCovid = new web3.eth.Contract(ABI, contractAddress, { defaultGas: suppliedGas })// End of ABi Code from Remix.
                           console.log('Contract instance created.')
+                          currentStep += 1
+                          keyToUse = Object.keys(this.VerifyResult)[currentStep]
                           // Smart contract and other logic continues.
                           // This is call operation. Any account can be used. It cost zero Eth.
-                          blockCovid.methods.verifyPersonStatus(this.personAccount, data.ipfsHash, this.hEcDR, this.fullSignature).call({ from: this.personAccount }).then(res => {
-                            console.log('Response from Contract: ', res)
+                          blockCovid.methods.verifyPersonStatus(this.currentAddress, data.ipfsHash, this.hEcDR, this.fullSignature).call({ from: this.currentAddress }).then(res => {
+                            // console.log('Response from Contract: ', res)
+                            var getFirstIndex = Object.keys(res)[0]
+                            var accessedFirstRetData = res[getFirstIndex]
+                            if (accessedFirstRetData === 'Sorry!') {
+                              // Person failed proof verification.
+                              // Change status.
+                              this.VerifyResult[keyToUse].status = 'error'
+                              this.$notify.error({
+                                title: 'Failed proof',
+                                message: 'Sorry! You failed blockchain verification.'
+                              })
+                            } else {
+                              // Person passed. Display status.
+                              this.VerifyResult[keyToUse].status = 'success'
+                              this.$notify({
+                                title: 'Successful proof',
+                                message: 'You passed blockchain proof',
+                                type: 'success'
+                              })
+                              var getSecondIndex = Object.keys(res)[1]
+                              var accessedSecondRetData = res[getSecondIndex]
+                              this.$alert('Test result: ' + accessedFirstRetData + '. ' + 'Vaccination Status: ' + accessedSecondRetData + '.', 'Proof success', {
+                                confirmButtonText: 'OK',
+                                callback: action => {
+                                  this.$message({
+                                    type: 'info',
+                                    message: 'Successful data retrieval'
+                                  })
+                                  this.$confirm('Do you want to verify another person?', 'Information needed', {
+                                    confirmButtonText: 'Yes',
+                                    cancelButtonText: 'No',
+                                    type: 'info'
+                                  }).then(() => {
+                                    this.$message({
+                                      type: 'success',
+                                      message: 'Awaiting new input'
+                                    })
+                                    window.location.reload() // Reload page.
+                                  }).catch(() => {
+                                    this.$message({
+                                      type: 'info',
+                                      message: 'Redirecting to home page'
+                                    })
+                                    this.$router.push('/')
+                                  })
+                                }
+                              })
+                            }
+                          }).catch(err => {
+                            console.log('Error occurred during blockchain verification', err)
+                            this.VerifyResult[keyToUse].status = 'error'
+                            this.$notify.error({
+                              title: 'Failed proof',
+                              message: 'Sorry! You failed blockchain checks.'
+                            })
+                            this.verifyBtnLoadState = false
                           })
-                          this.verifyBtnLoadState = false
                         } else {
                           this.VerifyResult[keyToUse].status = 'error'
+                          console.log('Signature length error')
+                          this.$message.error('Oops, Error generating signature.')
+                          this.verifyBtnLoadState = false
                         }
                       }).catch(err => {
                         console.log('Signature error: ', err)
@@ -205,6 +263,8 @@ export default {
                       })
                     } else {
                       this.VerifyResult[keyToUse].status = 'error'
+                      this.verifyBtnLoadState = false
+                      this.$message.error('Hash length error.')
                     }
                   }).catch(err => {
                     console.log('Hashing error: ', err)
@@ -213,6 +273,9 @@ export default {
                   })
                 } else {
                   this.VerifyResult[keyToUse].status = 'error'
+                  this.verifyBtnLoadState = false
+                  console.log('Invalid encrypted data from IPFS for Blockcovid.')
+                  this.$message.error('Invalid encrypted data from IPFS for Blockcovid.')
                 }
               }).catch(err => {
                 console.log('IPFS error: ', err)
