@@ -6,14 +6,16 @@ Acc0[ContractDeployer]: 0x3c764142878ecf10fa712336cde5cc778878a294
 
 Acc1:[Hospital_A]: 0xec5bf0f1de02e5fc8fde5adebe12bd4239535b7c
 Acc2:[Hospital_B]: 0x136f79926505f76c3252a921937dd5ab18ded515
-Acc3:[Verifier]: 
+Acc3:[Verifier]: 0xA179a6f917D6cdC0cEA465DC20086ff1318394a5
+Person:  0x5C5796233bA1B2BC91a067EFb41638234bd0a805
+Test: 0x52f1c368C4e7E94f52F24c14E07833f11230dd33
 
 
 Prv0: 0x314cb452c482592382858290d7c36150d1776f32551b37fa1ffab4a9a4a20b07
- 
 Prv1: 0xdc98df29213995bc9012600c0e6bfb338b55703db8ce64e0da91a89a9cb25b94
 Prv2: 0x6b2363f902615c1742a7c965d1f8d2ad052936433d94b685217d9f20945f914d
 Prv3: 0xc3bfc542f8a4b3f776f8399c8d5849a02dc1ff7cc949237446d300e003ebc6b6
+Prv4: 0x49683243966bbd284bf0f0c97797677a4c0b3815b21d6b8411c0eb51b9d0e4b7
 
 
 **************************************************************************************
@@ -23,7 +25,7 @@ Sample Public Key:  0x2590bfab99298edec2572a0dd4a2325264c4e8ae698d81c3670e370fa1
 
 **************************************************************************************
 
-hEcDR: 
-IPFS hash: 
-Person Address: 
-Sig.:  
+hEcDR: 0x0209b3eb68f18a02a8392a05cc762bbe084121af480c01e04f07a053540cd6c3
+IPFS hash: QmW75gTxZXQ3Mq7uXiUyk3d3Vk25YWKcdN3y1jrzRBZeSN
+Person Address: 0x5c5796233ba1b2bc91a067efb41638234bd0a805
+Sig.:  0x7465cda0f336f40d82730d...424f7615e734873a9eca3c1c
