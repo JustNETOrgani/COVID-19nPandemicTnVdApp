@@ -21,6 +21,11 @@ const routes = [
     name: 'contractMngrIndexPg',
     component: () => import('@/views/ContractManager/managerLanding.vue')
   },
+  {
+    path: '/ContractManager/statistics',
+    name: 'testNvaccinationStatistics',
+    component: () => import('@/views/ContractManager/statistics.vue')
+  },
   // Health facility.
   {
     path: '/HealthFacility/healthFacIndexPg',
