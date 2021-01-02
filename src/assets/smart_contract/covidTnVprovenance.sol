@@ -22,9 +22,9 @@ contract coronaVirusTnV{
     mapping (address => personStruct) public person; //Mapping for persons.
     mapping (address => approvedHF)  public approvedHC; // Mapping for approved health facilities.
     // Events begin.
-    event onboarded(address indexed txInitiator, string indexed tStatus, string indexed vStatus);
-    event personUpdated(address indexed txInitiator,string indexed tStatus,string indexed vStatus);
-    event approvedHFdone(string nameOfappHealthFac);
+    event onboarded(address indexed txInitiator, string tStatus, string vStatus);
+    event personUpdated(address indexed txInitiator,string tStatus,string vStatus);
+    event approvedHFdone(string nameOfappHealthFac, address addOfAHF);
     
     // Constructor for the contract.
     constructor() public {
@@ -40,7 +40,7 @@ contract coronaVirusTnV{
         approvedHC[AHF_address].AHF_address = AHF_address;
         approvedHC[AHF_address].AHF_name = AHF_name;
         approvedHealthFacilities.push(AHF_address);
-        emit approvedHFdone(AHF_name); // Emit event on creation of approved Health facility. 
+        emit approvedHFdone(AHF_name, AHF_address); // Emit event on creation of approved Health facility. 
         return true;
     }
     // Function to run checks on membership of approved health facilities. 

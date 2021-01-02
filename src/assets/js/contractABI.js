@@ -117,12 +117,12 @@ var ABI = [
         type: 'address'
       },
       {
-        indexed: true,
+        indexed: false,
         name: 'tStatus',
         type: 'string'
       },
       {
-        indexed: true,
+        indexed: false,
         name: 'vStatus',
         type: 'string'
       }
@@ -139,12 +139,12 @@ var ABI = [
         type: 'address'
       },
       {
-        indexed: true,
+        indexed: false,
         name: 'tStatus',
         type: 'string'
       },
       {
-        indexed: true,
+        indexed: false,
         name: 'vStatus',
         type: 'string'
       }
@@ -159,6 +159,11 @@ var ABI = [
         indexed: false,
         name: 'nameOfappHealthFac',
         type: 'string'
+      },
+      {
+        indexed: false,
+        name: 'addOfAHF',
+        type: 'address'
       }
     ],
     name: 'approvedHFdone',
@@ -263,7 +268,7 @@ var ABI = [
   }
 ]
 
-var contractAddress = '0x9bc11fbb6b7036bf40efa3365a625e07bf24a5eb'
+var contractAddress = '0x50b7a15b45F0a8ef46Abb9CB4F27488c659aEcC9'
 
 var suppliedGas = 3000000
 
