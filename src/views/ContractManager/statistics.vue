@@ -250,6 +250,7 @@ export default {
           } else {
           // Get the data and display.
             if (Object.keys(results).length === 0) {
+              console.log('No data available.')
               this.getDataBtnLoadState = false
               this.getAllTestsNvac = false
               this.defaultPageItem = true
