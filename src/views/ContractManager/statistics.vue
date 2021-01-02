@@ -59,7 +59,7 @@
               </el-table>
             </div>
             <div v-else-if="ahfSpecificData" v-loading="ahfSpecificLoading">
-                <h4>AHF-specific statistics. Address: {{addressOfAHF}}</h4>
+                <p class="infoAtGlance">AHF-specific statistics. Address: {{addressOfAHF}}</p>
                 <el-table
                 :data="pageTableData"
                 style="width: 100%"
@@ -76,6 +76,7 @@
               </el-table>
             </div>
             <div v-else-if="ahfs" v-loading="ahfLoading">
+              <p class="infoAtGlance">Total number of AHFs: {{numOfAHFs}}</p>
                 <el-table
                 :data="pageTableData"
                 style="width: 100%"
@@ -94,19 +95,6 @@
             <div v-else-if="defaultPageItem">
                 <p>No data retrieved</p>
             </div>
-            <el-dialog title="Ethereum address of AHF" width="36%" :visible.sync="getAHFaddressDialog">
-                  <el-form :model="ahfAddressRequest"
-                  :rules="rules"
-                  ref="ahfAddressRequest">
-                        <el-form-item label="AHF's address" prop="ahfAddress">
-                            <el-input v-model="ahfAddressRequest.ahfAddress" autocomplete="off"></el-input>
-                        </el-form-item>
-                  </el-form>
-                  <span slot="footer" class="dialog-footer">
-                      <el-button @click="getAHFaddressDialog = false">Cancel</el-button>
-                      <el-button :loading="getAHFaddressLoadState" type="primary" @click="getAHFaddress('ahfAddressRequest')">Confirm</el-button>
-                  </span>
-                </el-dialog>
           </el-col>
         </el-row>
     </div>
@@ -124,9 +112,6 @@ export default {
       contractDeployerTasks: {
         deployerTask: ''
       },
-      ahfAddressRequest: {
-        ahfAddress: ''
-      },
       addressOfAHF: '',
       // Table data begins.
       pageTableData: [],
@@ -143,12 +128,9 @@ export default {
       getDataBtnLoadState: false,
       allTestsNvacLoading: false,
       ahfSpecificLoading: false,
-      getAHFaddressLoadState: false,
-      // Dialog.
-      getAHFaddressDialog: false,
+      ahfLoading: false,
       // Contract Deployer's address
       contractDeployerAddress: '',
-      ahfLoading: '',
       rules: {
         deployerTask: [
           { required: true, message: 'Please select desired task', trigger: 'blur' }
@@ -156,22 +138,22 @@ export default {
       },
       // Table labels begin.
       allTestsNvactableLabel: [
-        { label: 'Total tests', prop: 'totalTests', width: '320px' },
-        { label: 'Number of Positives', prop: 'numOfTotalPos' },
-        { label: 'Number of Negatives', prop: 'numOfTotalNeg' },
-        { label: 'Number of persons vaccinated', prop: 'numOfVacc' },
-        { label: 'Number of persons not vaccinated', prop: 'numOfNonVacc' }
+        { label: 'Persons tested', prop: 'totalTests', width: '130px' },
+        { label: 'Number of Positives', prop: 'numOfTotalPos', width: '110px' },
+        { label: 'Number of Negatives', prop: 'numOfTotalNeg', width: '110px' },
+        { label: 'Number of persons vaccinated', prop: 'numOfVacc', width: '160px' },
+        { label: 'Number of persons not vaccinated', prop: 'numOfNonVacc', width: '160px' }
       ],
       ahfSpecifictableLabel: [
-        { label: 'Total tests', prop: 'totalTests', width: '320px' },
-        { label: 'Number of Positives', prop: 'numOfTotalPos' },
-        { label: 'Number of Negatives', prop: 'numOfTotalNeg' },
-        { label: 'Number of persons vaccinated', prop: 'numOfVacc' },
-        { label: 'Number of persons not vaccinated', prop: 'numOfNonVacc' }
+        { label: 'Persons tested', prop: 'totalTests', width: '130px' },
+        { label: 'Number of Positives', prop: 'numOfTotalPos', width: '110px' },
+        { label: 'Number of Negatives', prop: 'numOfTotalNeg', width: '110px' },
+        { label: 'Number of persons vaccinated', prop: 'numOfVacc', width: '160px' },
+        { label: 'Number of persons not vaccinated', prop: 'numOfNonVacc', width: '160px' }
       ],
       ahftableLabel: [
-        { label: 'Name of Approved Health Facility (AHF)', prop: 'nameOfAHF' },
-        { label: 'Ethereum address of AHF', prop: 'ethAddOfAHF' }
+        { label: 'Name of Approved Health Facility (AHF)', prop: 'nameOfAHF', width: '320px' },
+        { label: 'Ethereum address of AHF', prop: 'ethAddOfAHF', width: '380px' }
       ]
       // Table labels end.
     }
@@ -254,6 +236,10 @@ export default {
               this.getDataBtnLoadState = false
               this.getAllTestsNvac = false
               this.defaultPageItem = true
+              this.$message({
+                message: 'Sorry! No AHFs registered on BlockCovid.',
+                type: 'info'
+              })
             } else {
               // Results is not empty hence get and display.
               console.log('Results from Contract: ', results)
@@ -268,6 +254,7 @@ export default {
               var tOccurences = this.getCounts(testStatus)
               var vOccurences = this.getCounts(vaccStatus)
               for (let i = 0; i < 1; i++) {
+                this.pageTableData[i] = []
                 this.pageTableData[i].totalTests = Object.keys(results).length
                 this.pageTableData[i].numOfTotalPos = tOccurences.Positive
                 this.pageTableData[i].numOfTotalNeg = tOccurences.Negative
@@ -282,81 +269,107 @@ export default {
         })
     },
     getAHFspecificTnVresults () {
-      // console.log('Retrieving revised papers.')
-      this.pageTableData.splice(0, this.pageTableData.length) // Remove all previously stored values.
-      this.revSubLoading = true
-      this.defaultPageItem = false
-      this.receivedSub = false
-      this.reqPaper = false
-      this.sendPaperToUser = false
-      this.paidPapers = false
-      // Perform required task and return true.
-      var jpBlockContract = new web3.eth.Contract(ABI, contractAddress, { defaultGas: suppliedGas })// End of ABi Code from Remix.
-      console.log('Contract instance for access type retrieval created.')
-      jpBlockContract.getPastEvents('revisedAndReSubmittedManu', { filter: { jAddress: [web3.eth.defaultAccount] }, fromBlock: 0, toBlock: 'latest' },
-        (err, results) => {
-          if (err) {
-            this.receivedSubLoading = false
-            this.$message.error('Sorry! Error retrieving data. Please, try again later.')
-          } else {
-          // Get the data and display.
-            if (Object.keys(results).length === 0) {
-              this.jDashboardTaskBtnLoadState = false
-              this.receivedSubLoading = false
-              this.defaultPageItem = true
-            } else {
-              // Results is not empty hence get and display.
-              // console.log('Received submissions: ', results)
-              console.log('Total revised papers: ', Object.keys(results).length)
-              for (let i = 0; i < Object.keys(results).length; i++) {
-                this.pageTableData[i] = []
-                this.pageTableData[i].origPaperHash = results[i].returnValues.origPaperHash
-                this.pageTableData[i].newPaperHash = results[i].returnValues.newPaperHash
+      this.$prompt('Please enter Ethereum address of the AHF.', 'Information required', {
+        confirmButtonText: 'Continue',
+        cancelButtonText: 'Cancel',
+        inputPlaceholder: 'Eth address of the AHF.',
+        inputPattern: /^0x[0-9A-F]{40}$/i
+      }).then(({ value }) => {
+        if (web3.utils.isAddress(value) === true) {
+          this.pageTableData.splice(0, this.pageTableData.length) // Remove all previously stored values.
+          this.ahfSpecificLoading = true
+          this.ahfs = false
+          this.getAllTestsNvac = false
+          this.defaultPageItem = false
+          // Perform required task and return true.
+          var blockCovid = new web3.eth.Contract(ABI, contractAddress, { defaultGas: suppliedGas })// End of ABi Code from Remix.
+          console.log('Contract instance for access type retrieval created.')
+          blockCovid.getPastEvents('onboarded', { filter: { txInitiator: [value] }, fromBlock: 0, toBlock: 'latest' },
+            (err, results) => {
+              if (err) {
+                this.ahfSpecificLoading = false
+                this.$message.error('Sorry! Error retrieving data. Please, try again later.')
+              } else {
+                // Get the data and display.
+                if (Object.keys(results).length === 0) {
+                  console.log('No data available.')
+                  this.getDataBtnLoadState = false
+                  this.ahfSpecificData = false
+                  this.defaultPageItem = true
+                  this.$message({
+                    message: 'Sorry! This AHF has no data on BlockCovid.',
+                    type: 'info'
+                  })
+                } else {
+                  // Results is not empty hence get and display.
+                  console.log('Results from Contract: ', results)
+                  console.log('Total: ', Object.keys(results).length)
+                  var testStatus = []
+                  var vaccStatus = []
+                  for (let i = 0; i < Object.keys(results).length; i++) {
+                    testStatus.push(results[i].returnValues.tStatus)
+                    vaccStatus.push(results[i].returnValues.vStatus)
+                  }
+                  // Get counts regarding number of occurrences of each item in the array.
+                  var tOccurences = this.getCounts(testStatus)
+                  var vOccurences = this.getCounts(vaccStatus)
+                  for (let i = 0; i < 1; i++) {
+                    this.pageTableData[i] = []
+                    this.pageTableData[i].totalTests = Object.keys(results).length
+                    this.pageTableData[i].numOfTotalPos = tOccurences.Positive
+                    this.pageTableData[i].numOfTotalNeg = tOccurences.Negative
+                    this.pageTableData[i].numOfVacc = vOccurences.vaccinated
+                    this.pageTableData[i].numOfNonVacc = vOccurences['Not Vaccinated']
+                  }
+                  this.addressOfAHF = value
+                  this.getDataBtnLoadState = false
+                  this.ahfSpecificLoading = false
+                  this.ahfSpecificData = true
+                }
               }
-              this.jDashboardTaskBtnLoadState = false
-              this.revSubLoading = false
-              // console.log('Objet to display as table: ', this.pageTableData)
-              this.revisedSub = true
-            }
-          }
-        })
+            })
+        }
+      }).catch(err => {
+        console.log('User cancelled. Error: ', err)
+        this.ahfSpecificLoading = false
+        this.$message.error('Sorry! Ethereum address of AHF required.')
+        this.getDataBtnLoadState = false
+      })
     },
     getRegisteredAHF () {
       this.pageTableData.splice(0, this.pageTableData.length) // Remove all previously stored values.
-      this.jDashboardTaskBtnLoadState = true
-      this.paidPapersbLoading = true
-      this.defaultPageItem = false // 1
-      this.receivedSub = false // 2
-      this.reqPaper = false // 3
-      this.sendPaperToUser = false // 4
-      this.revisedSub = false // 5
+      this.ahfLoading = true
+      this.getAllTestsNvac = false
+      this.ahfSpecificData = false
+      this.defaultPageItem = false
       // Perform required task and return true.
-      var jpBlockContract = new web3.eth.Contract(ABI, contractAddress, { defaultGas: suppliedGas })// End of ABi Code from Remix.
+      var blockCovid = new web3.eth.Contract(ABI, contractAddress, { defaultGas: suppliedGas })// End of ABi Code from Remix.
       console.log('Contract instance for access type retrieval created.')
-      jpBlockContract.getPastEvents('paymentMade', { filter: { to: [web3.eth.defaultAccount] }, fromBlock: 0, toBlock: 'latest' },
+      blockCovid.getPastEvents('approvedHFdone', { fromBlock: 0, toBlock: 'latest' },
         (err, results) => {
           if (err) {
-            this.receivedSubLoading = false
+            this.ahfs = false
             this.$message.error('Sorry! Error retrieving data. Please, try again later.')
           } else {
           // Get the data and display.
             if (Object.keys(results).length === 0) {
-              this.jDashboardTaskBtnLoadState = false
-              this.receivedSubLoading = false
+              console.log('No data available.')
+              this.getDataBtnLoadState = false
+              this.ahfs = false
               this.defaultPageItem = true
             } else {
               // Results is not empty hence get and display.
-              // console.log('Received submissions: ', results)
-              console.log('Total paid for papers: ', Object.keys(results).length)
+              console.log('Results from Contract: ', results)
+              console.log('Total: ', Object.keys(results).length)
               for (let i = 0; i < Object.keys(results).length; i++) {
                 this.pageTableData[i] = []
-                // this.pageTableData[i].source = results[i].returnValues.source // Commented for privacy reasons.
-                this.pageTableData[i].paperHash = results[i].returnValues.paperHash
+                this.pageTableData[i].nameOfAHF = results[i].returnValues.nameOfappHealthFac
+                this.pageTableData[i].ethAddOfAHF = results[i].returnValues.addOfAHF
               }
-              this.jDashboardTaskBtnLoadState = false
-              this.paidPapersbLoading = false
-              // console.log('Objet to display as table: ', this.pageTableData)
-              this.paidPapers = true
+              this.numOfAHFs = Object.keys(results).length
+              this.getDataBtnLoadState = false
+              this.ahfLoading = false
+              this.ahfs = true
             }
           }
         })
@@ -411,19 +424,18 @@ export default {
   text-align: left;
 }
 
-#midLeft {
-  background-color: #ffffff;
-  margin: 0.1% auto;
-  width: 20%;
-  padding: 0.2rem 2.5rem;
-  float: left;
-}
-
 .rowAlignment{
   margin-top: 0.8rem;
 }
 
 .textPlacements{
     margin-left: -2rem;
+}
+
+.infoAtGlance{
+  text-align: left;
+  margin-left: 1rem;
+  font-size: 1.1rem;
+  color: rgb(113, 140, 189);
 }
 </style>
