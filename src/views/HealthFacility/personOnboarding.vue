@@ -158,6 +158,10 @@ export default {
       accountChangeStatus: false,
       // Dialogs.
       accountSwitchDialogVisible: false,
+      // Button disable tracker.
+      processDataBtnState: false,
+      getPersonSigBtnState: false,
+      anchorOnBlockBtnState: false,
       rules: {
         centerID: [
           { required: true, message: 'Please input center ID', trigger: 'blur' },
@@ -223,37 +227,44 @@ export default {
         .catch(_ => {})
     },
     processFormData (formName) {
-      if (this.onboardPerson.authCheckBox === true) {
-        this.$refs[formName].validate(valid => {
-          this.personOnboardLoadBtn = true
-          if (valid) {
-            var data = {
-              centerID: this.onboardPerson.centerID,
-              tStatus: this.onboardPerson.tStatus,
-              vStatus: this.onboardPerson.vStatus,
-              timeStamp: new Date().getTime()
+      if (this.processDataBtnState === false) {
+        if (this.onboardPerson.authCheckBox === true) {
+          this.$refs[formName].validate(valid => {
+            this.personOnboardLoadBtn = true
+            if (valid) {
+              var data = {
+                centerID: this.onboardPerson.centerID,
+                tStatus: this.onboardPerson.tStatus,
+                vStatus: this.onboardPerson.vStatus,
+                timeStamp: new Date().getTime()
+              }
+              console.log('Data: ', data)
+              // Encrypt data using user public key ---> EcDR
+              this.EcDR = asymmEncrypt(this.AHPkeyGenerated, data, this.pubKeyOfPerson)
+              console.log('EcDR: ', this.EcDR)
+              // Hash encrypted data---> hEcDR.
+              getHash(this.EcDR).then(res => {
+                this.hEcDR = res
+                // AHP signs hEcDR to get signature. --->AHPsignature
+                this.signatureOfAHP() // Includes push to IPFS.
+              })
+              // Person signs IPFShash to get signature.
+              // Anchor data onto the blockchain via Smart Contract.
+              this.personOnboardLoadBtn = false
+            } else {
+              console.log('Submission error.')
+              this.personOnboardLoadBtn = false
+              return false
             }
-            console.log('Data: ', data)
-            // Encrypt data using user public key ---> EcDR
-            this.EcDR = asymmEncrypt(this.AHPkeyGenerated, data, this.pubKeyOfPerson)
-            console.log('EcDR: ', this.EcDR)
-            // Hash encrypted data---> hEcDR.
-            getHash(this.EcDR).then(res => {
-              this.hEcDR = res
-              // AHP signs hEcDR to get signature. --->AHPsignature
-              this.signatureOfAHP() // Includes push to IPFS.
-            })
-            // Person signs IPFShash to get signature.
-            // Anchor data onto the blockchain via Smart Contract.
-            this.personOnboardLoadBtn = false
-          } else {
-            console.log('Submission error.')
-            this.personOnboardLoadBtn = false
-            return false
-          }
-        })
+          })
+        } else {
+          this.$message('Please check the checkbox')
+        }
       } else {
-        this.$message('Please check the checkbox')
+        this.$message({
+          message: 'Sorry! Person data already processed.',
+          type: 'warning'
+        })
       }
     },
     async getAccount () {
@@ -274,7 +285,8 @@ export default {
         console.log('Public key acquired.')
       }).catch((err) => {
         console.log('User has cancelled.', err)
-        // window.location.reload() // Reload page.
+        this.$message.error('Sorry! Public key of person required. Reloading...')
+        window.location.reload() // Reload page.
       })
     },
     // Some helper functions during encryption.
@@ -305,25 +317,31 @@ export default {
         this.active += 1 // Increment step by 1 to move to next step.
         if (this.accountChangeStatus === false) {
           this.accountSwitchDialogVisible = true
+          // Change state of processData button.
+          this.processDataBtnState = true
         }
       })
     },
     getPersonSig () {
-      if (this.hEcDR !== '' && this.IPFSHashOfhEcDR !== '') {
-        if (this.personAccount !== '') {
-          this.personSigGenLoadBtn = true
-          this.signatureOfPerson()
+      if (this.getPersonSigBtnState === false) {
+        if (this.hEcDR !== '' && this.IPFSHashOfhEcDR !== '') {
+          if (this.personAccount !== '') {
+            this.personSigGenLoadBtn = true
+            this.signatureOfPerson()
+          } else {
+            this.$message({
+              message: 'Account switching not done. Switch account now.',
+              type: 'warning'
+            })
+          }
         } else {
           this.$message({
-            message: 'Account switching not done. Switch account now.',
+            message: 'Sorry! Complete step 1 before proceeding.',
             type: 'warning'
           })
         }
       } else {
-        this.$message({
-          message: 'Sorry! Complete step 1 before proceeding.',
-          type: 'warning'
-        })
+        this.$message.error('Sorry! On-chain data already generated')
       }
     },
     signatureOfPerson () {
@@ -337,59 +355,94 @@ export default {
         console.log('Person signature acquired.')
         this.personSigGenLoadBtn = false
         console.log('Person sig.: ', this.fullSignature)
+        this.$alert('Kindly copy your IPFS hash for proof', 'User information', {
+          confirmButtonText: 'OK',
+          callback: action => {
+            this.$message({
+              type: 'info',
+              message: 'User consented'
+            })
+          }
+        })
         this.active += 1 // Increment step to move to next stage.
+        // Change state of person signature button.
+        this.getPersonSigBtnState = true
       }).catch(err => {
         console.log('Error generating signature.', err)
         this.$message.error('Oops, Error getting person\'s signature')
       })
     },
     anchorOnchain () {
-      // Check all needed smart contract-related data have been acquired.
-      if (this.hEcDR !== '' && this.IPFSHashOfhEcDR !== '' && this.personAccount !== '' && this.fullSignature !== '') {
-        console.log('Sending to blockchain')
-        this.submitLoadBtn = true
-        var blockCovid = new web3.eth.Contract(ABI, contractAddress, { defaultGas: suppliedGas })
-        console.log('Contract instance created.')
-        // Smart contract and other logic continues.
-        try {
-          blockCovid.methods.personOnboarding(this.personAccount, this.IPFSHashOfhEcDR, this.hEcDR, this.onboardPerson.tStatus, this.onboardPerson.vStatus, this.fullSignature).send({
-            from: this.currentEthAddress,
-            gas: 400000
-          }).on('transactionHash', (hash) => {
-            console.log('Trans. hash is: ', hash)
-          }).on('receipt', (receipt) => {
-            console.log('Trans. Block Number is: ', receipt.blockNumber)
-            // Display success note.
-            this.active += 1 // Increment step.
-            this.$alert('Person successfully anchored on BlockCovid.', 'Creation success', {
-              confirmButtonText: 'OK',
-              callback: action => {
-                this.$message({
-                  type: 'info',
-                  message: 'Transaction successful'
-                })
-                this.$router.push('healthFacIndexPg')
-              }
+      if (this.anchorOnBlockBtnState === false) {
+        // Check all needed smart contract-related data have been acquired.
+        if (this.hEcDR !== '' && this.IPFSHashOfhEcDR !== '' && this.personAccount !== '' && this.fullSignature !== '') {
+          console.log('Sending to blockchain')
+          this.submitLoadBtn = true
+          var blockCovid = new web3.eth.Contract(ABI, contractAddress, { defaultGas: suppliedGas })
+          console.log('Contract instance created.')
+          // Smart contract and other logic continues.
+          try {
+            blockCovid.methods.personOnboarding(this.personAccount, this.IPFSHashOfhEcDR, this.hEcDR, this.onboardPerson.tStatus, this.onboardPerson.vStatus, this.fullSignature).send({
+              from: this.currentEthAddress,
+              gas: 400000
+            }).on('transactionHash', (hash) => {
+              console.log('Trans. hash is: ', hash)
+            }).on('receipt', (receipt) => {
+              console.log('Trans. Block Number is: ', receipt.blockNumber)
+              // Display success note.
+              this.active += 1 // Increment step.
+              this.$alert('Person successfully anchored on BlockCovid.', 'Creation success', {
+                confirmButtonText: 'OK',
+                callback: action => {
+                  this.$message({
+                    type: 'info',
+                    message: 'Transaction successful'
+                  })
+                  this.anchorOnBlockBtnState = true
+                  this.getUserChoiceForRedirect()
+                }
+              })
+              this.$message({
+                message: 'Person successfully created on BlockCovid.',
+                type: 'success'
+              })
+              this.submitLoadBtn = false
+            }).on('error', (error) => {
+              console.log('Error occured', error)
+              this.submitLoadBtn = false
+              this.$message.error('Oops. Eror occured during transaction processing.')
             })
-            this.$message({
-              message: 'Person successfully created on BlockCovid.',
-              type: 'success'
-            })
+          } catch {
+            console.log('Sorry! Error occured.')
             this.submitLoadBtn = false
-          }).on('error', (error) => {
-            console.log('Error occured', error)
-            this.submitLoadBtn = false
-            this.$message.error('Oops. Eror occured during transaction processing.')
-          })
-        } catch {
-          console.log('Sorry! Error occured.')
+            this.$message.error('Non-transactional error. Please try again later.')
+          }
           this.submitLoadBtn = false
-          this.$message.error('Non-transactional error. Please try again later.')
+        } else {
+          this.$message.error('Sorry! On-chain data not generated.')
         }
-        this.submitLoadBtn = false
       } else {
-        this.$message.error('Sorry! On-chain data not generated.')
+        this.$message.error('Sorry! Data on page already processed.')
       }
+    },
+    getUserChoiceForRedirect () {
+      this.$confirm('Do you want to onboard another person?', 'Information needed', {
+        confirmButtonText: 'Yes',
+        cancelButtonText: 'No',
+        type: 'info'
+      }).then(() => {
+        this.$message({
+          type: 'success',
+          message: 'Awaiting new input'
+        })
+        window.location.reload() // Reload page.
+      }).catch(() => {
+        this.$message({
+          type: 'info',
+          message: 'Redirecting to landing page'
+        })
+        this.$router.push('healthFacIndexPg')
+      })
     }
   }
 }
