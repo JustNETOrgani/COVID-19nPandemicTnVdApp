@@ -59,6 +59,7 @@
               </el-table>
             </div>
             <div v-else-if="ahfSpecificData" v-loading="ahfSpecificLoading">
+                <h4>AHF-specific statistics. Address: {{addressOfAHF}}</h4>
                 <el-table
                 :data="pageTableData"
                 style="width: 100%"
@@ -112,7 +113,7 @@
 </template>
 
 <script>
-
+import ethEnabled from '@/assets/js/web3nMetaMask'
 import web3 from '@/assets/js/web3Only'
 import { ABI, contractAddress, suppliedGas } from '@/assets/js/contractABI'
 
@@ -126,9 +127,9 @@ export default {
       ahfAddressRequest: {
         ahfAddress: ''
       },
+      addressOfAHF: '',
       // Table data begins.
       pageTableData: [],
-      reqPageTableData: [],
       // Table data ends.
       // Array to hold requested IPFS hashes of papers begins.
       reqIPFShashes: [],
@@ -145,6 +146,8 @@ export default {
       getAHFaddressLoadState: false,
       // Dialog.
       getAHFaddressDialog: false,
+      // Contract Deployer's address
+      contractDeployerAddress: '',
       ahfLoading: '',
       rules: {
         deployerTask: [
@@ -152,141 +155,132 @@ export default {
         ]
       },
       // Table labels begin.
-      receivedPaperstableLabel: [
-        { label: 'Paper Hash', prop: 'paperHash', width: '320px' },
-        { label: 'IPFS hash', prop: 'paperIPFShash' },
-        { label: 'Paper Title', prop: 'paperTitle' },
-        { label: 'Submitting author', prop: 'submittingAuthor' },
-        { label: 'Authors public key', prop: 'userPubKey' },
-        { label: 'IPFS hash of Suppl. paper', prop: 'suppleFileIPFShash' }
+      allTestsNvactableLabel: [
+        { label: 'Total tests', prop: 'totalTests', width: '320px' },
+        { label: 'Number of Positives', prop: 'numOfTotalPos' },
+        { label: 'Number of Negatives', prop: 'numOfTotalNeg' },
+        { label: 'Number of persons vaccinated', prop: 'numOfVacc' },
+        { label: 'Number of persons not vaccinated', prop: 'numOfNonVacc' }
       ],
-      revisedPaperstableLabel: [
-        { label: 'Hash of the original paper', prop: 'origPaperHash', width: '560px' },
-        { label: 'Hash of the revised paper', prop: 'newPaperHash' }
+      ahfSpecifictableLabel: [
+        { label: 'Total tests', prop: 'totalTests', width: '320px' },
+        { label: 'Number of Positives', prop: 'numOfTotalPos' },
+        { label: 'Number of Negatives', prop: 'numOfTotalNeg' },
+        { label: 'Number of persons vaccinated', prop: 'numOfVacc' },
+        { label: 'Number of persons not vaccinated', prop: 'numOfNonVacc' }
       ],
-      paidPaperstableLabel: [
-        // { label: 'Payee', prop: 'source', width: '380px' }, // Commented for privacy reasons.
-        { label: 'Hash of the paid paper', prop: 'paperHash' }
-      ],
-      reqPaperstableLabel: [
-        { label: 'IPFS hash of requested paper', prop: 'IPFShash', width: '440px' },
-        { label: 'Public key of requestee', prop: 'userPUbKey' }
+      ahftableLabel: [
+        { label: 'Name of Approved Health Facility (AHF)', prop: 'nameOfAHF' },
+        { label: 'Ethereum address of AHF', prop: 'ethAddOfAHF' }
       ]
       // Table labels end.
     }
   },
   components: {
-    // Head
-    // Footer
   },
   created () {
+    if (!ethEnabled()) {
+      this.$message('Please install an Ethereum-compatible browser or extension like MetaMask to use this dApp!')
+    } else {
+      this.getAccount().then(accounts => {
+        this.contractDeployerAddress = accounts[0]
+        console.log('Current account: ', this.contractDeployerAddress)
+      })
+    }
+  },
+  watch: {
+    'contractDeployerAddress' () {
+      this.switchAccount()
+    }
   },
   methods: {
-    submitForm (formName) {
-      if (this.jAccountIndexEntered.length !== 0) {
-        this.$refs[formName].validate(valid => {
-          this.jDashboardTaskBtnLoadState = true
-          if (valid) {
-            // Call different methods here based on journal's selection.
-            if (this.jBoardTasks.jTask === 'recSub') {
-              // console.log('Preparing to retrieve submitted papers')
-              this.getReceivedSub()
-              return
-            } else if (this.jBoardTasks.jTask === 'revisedSub') {
-              // console.log('Preparing to retrieve revised papers')
-              this.getRevisedSub()
-              return
-            } else if (this.jBoardTasks.jTask === 'paymentsMade') {
-              // console.log('Preparing to retrieve accepted paid papers')
-              this.getPaidPapers()
-              return
-            } else if (this.jBoardTasks.jTask === 'requestedPaper') {
-              // console.log('Preparing to retrieve requested papers')
-              this.getReqPaper()
-              return
-            } else if (this.jBoardTasks.jTask === 'sendPaperToUser') {
-              // console.log('Preparing for send paper to user procedure.')
-              if (this.reqIPFShashes.length === 0) {
-                this.defaultPageItem = true
-                this.$alert('There exist no requested paper to be sent.', 'Status of requested papers.', {
-                  confirmButtonText: 'OK',
-                  callback: action => {
-                    this.$message({
-                      type: 'info',
-                      message: `action: ${action}`
-                    })
-                  }
-                })
-              } else {
-                this.captureSendPaperToUserDialog = true
-              }
-            }
-            this.jDashboardTaskBtnLoadState = false
-          } else {
-            console.log('Submission error.')
-            this.jDashboardTaskBtnLoadState = false
-            return false
-          }
-        })
-      } else {
-        this.$message('Enter required journal account. Reloading page...')
-        window.location.reload()
-      }
+    async getAccount () {
+      var accounts = await window.ethereum.request({ method: 'eth_requestAccounts' })
+      return accounts
     },
-    jPubKeyInputValidation (input) {
-      const count = input.toString().length
-      if (input === '' || isNaN(input) === true || input < 0 || count <= 63) {
-        return 0
-      } else {
-        return 1
-      }
+    switchAccount () {
+      var myRoot = this // Ensure all this or vue global variables can be accessed within this fucntion via myRoot.
+      window.ethereum.on('accountsChanged', function (accounts) {
+        myRoot.contractDeployerAddress = accounts[0]
+        console.log('Selected account: ', myRoot.contractDeployerAddress)
+        myRoot.$message({
+          message: 'Account switched successfully.',
+          type: 'success'
+        })
+        console.log('Account switched')
+        myRoot.accountChangeStatus = true
+      })
+    },
+    submitForm (formName) {
+      this.$refs[formName].validate(valid => {
+        this.getDataBtnLoadState = true
+        if (valid) {
+          // Call different methods here based on journal's selection.
+          if (this.contractDeployerTasks.deployerTask === 'allTestsNvacResults') {
+            this.getAllTestsAndVaccResults()
+          } else if (this.contractDeployerTasks.deployerTask === 'AHFspecific') {
+            this.getAHFspecificTnVresults()
+          } else if (this.contractDeployerTasks.deployerTask === 'AHFs') {
+            this.getRegisteredAHF()
+          }
+        } else {
+          console.log('Submission error.')
+          this.getDataBtnLoadState = false
+          return false
+        }
+      })
     },
     backToPrvPage () {
       this.$router.push('managerlanding')
     },
-    getReceivedSub () {
+    getAllTestsAndVaccResults () {
       this.pageTableData.splice(0, this.pageTableData.length) // Remove all previously stored values.
-      this.jDashboardTaskBtnLoadState = false
-      this.receivedSubLoading = true
+      this.allTestsNvacLoading = true
+      this.ahfs = false
+      this.ahfSpecificData = false
       this.defaultPageItem = false
-      this.revisedSub = false
-      this.reqPaper = false
-      this.sendPaperToUser = false
-      this.paidPapers = false
       // Perform required task and return true.
-      var jpBlockContract = new web3.eth.Contract(ABI, contractAddress, { defaultGas: suppliedGas })// End of ABi Code from Remix.
+      var blockCovid = new web3.eth.Contract(ABI, contractAddress, { defaultGas: suppliedGas })// End of ABi Code from Remix.
       console.log('Contract instance for access type retrieval created.')
-      jpBlockContract.getPastEvents('journalRecSub', { filter: { jAddress: [web3.eth.defaultAccount] }, fromBlock: 0, toBlock: 'latest' },
+      blockCovid.getPastEvents('onboarded', { fromBlock: 0, toBlock: 'latest' },
         (err, results) => {
           if (err) {
-            this.receivedSubLoading = false
+            this.allTestsNvacLoading = false
             this.$message.error('Sorry! Error retrieving data. Please, try again later.')
           } else {
           // Get the data and display.
             if (Object.keys(results).length === 0) {
-              this.jDashboardTaskBtnLoadState = false
-              this.receivedSubLoading = false
+              this.getDataBtnLoadState = false
+              this.getAllTestsNvac = false
               this.defaultPageItem = true
             } else {
               // Results is not empty hence get and display.
-              // console.log('Received submissions: ', results)
-              console.log('Total submissions: ', Object.keys(results).length)
+              console.log('Results from Contract: ', results)
+              console.log('Total: ', Object.keys(results).length)
+              var testStatus = []
+              var vaccStatus = []
               for (let i = 0; i < Object.keys(results).length; i++) {
-                this.pageTableData[i] = []
-                this.pageTableData[i].paperHash = results[i].returnValues.paperHash
-                this.pageTableData[i].paperTitle = web3.utils.hexToUtf8(results[i].returnValues.paperTitle)
-                this.pageTableData[i].submittingAuthor = results[i].returnValues.submittingAuthor
-                this.pageTableData[i].userPubKey = results[i].returnValues.userPubKey
+                testStatus.push(results[i].returnValues.tStatus)
+                vaccStatus.push(results[i].returnValues.vStatus)
               }
-              this.jDashboardTaskBtnLoadState = false
-              this.receivedSubLoading = false
-              // console.log('Objet to display as table: ', this.pageTableData)
-              this.receivedSub = true
+              // Get counts regarding number of occurrences of each item in the array.
+              var tOccurences = this.getCounts(testStatus)
+              var vOccurences = this.getCounts(vaccStatus)
+              for (let i = 0; i < 1; i++) {
+                this.pageTableData[i].totalTests = Object.keys(results).length
+                this.pageTableData[i].numOfTotalPos = tOccurences.Positive
+                this.pageTableData[i].numOfTotalNeg = tOccurences.Negative
+                this.pageTableData[i].numOfVacc = vOccurences.vaccinated
+                this.pageTableData[i].numOfNonVacc = vOccurences['Not Vaccinated']
+              }
+              this.getDataBtnLoadState = false
+              this.allTestsNvacLoading = false
+              this.getAllTestsNvac = true
             }
           }
         })
     },
-    getRevisedSub () {
+    getAHFspecificTnVresults () {
       // console.log('Retrieving revised papers.')
       this.pageTableData.splice(0, this.pageTableData.length) // Remove all previously stored values.
       this.revSubLoading = true
@@ -326,7 +320,7 @@ export default {
           }
         })
     },
-    getPaidPapers () {
+    getRegisteredAHF () {
       this.pageTableData.splice(0, this.pageTableData.length) // Remove all previously stored values.
       this.jDashboardTaskBtnLoadState = true
       this.paidPapersbLoading = true
@@ -366,25 +360,16 @@ export default {
           }
         })
     },
-    getAHFaddress () {
-
-    },
-    getSendPaperToUser () {
-      this.jDashboardTaskBtnLoadState = true
-      this.sendPaperLoading = true
-      this.defaultPageItem = false // 1
-      this.receivedSub = false // 2
-      this.reqPaper = false // 3
-      this.paidPapers = false // 4
-      this.revisedSub = false // 5
-      // Perform required task and return true.
-      this.sendPaperLoading = false
-      this.sendPaperToUser = true // 6
-    },
-    convertHextoBytes (hexString) {
-      var bytes = new Uint8Array(Math.ceil(hexString.length / 2))
-      for (var i = 0; i < bytes.length; i++) bytes[i] = parseInt(hexString.substr(i * 2, 2), 16)
-      return bytes
+    getCounts (theArray) {
+      var counts = {}
+      for (var i = 0; i < theArray.length; i++) {
+        if (typeof counts[theArray[i]] === 'undefined') {
+          counts[theArray[i]] = 1
+        } else {
+          counts[theArray[i]]++
+        }
+      }
+      return counts
     }
   }
 }
