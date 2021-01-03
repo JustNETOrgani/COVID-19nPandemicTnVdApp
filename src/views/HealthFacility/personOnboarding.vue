@@ -7,9 +7,10 @@
             <h3>Person Onboarding on the blockchain</h3>
             <el-row>
                 <el-steps :active="active" align-center finish-status="success">
-                <el-step title="Step 1" description="Process data"></el-step>
+                <el-step title="Step 1" description="Enter and Process data"></el-step>
                 <el-step title="Step 2" description="Get Person's signature"></el-step>
-                <el-step title="Step 3" description="Anchor in blockchain"></el-step>
+                <el-step title="Step 3" description="Get IPFS hash via QR code"></el-step>
+                <el-step title="Step 4" description="Anchor in blockchain"></el-step>
                 </el-steps>
             </el-row>
             <br>
@@ -113,6 +114,10 @@
             <el-button type="primary" @click="accountSwitchDialogVisible = false">Ok</el-button>
           </span>
         </el-dialog>
+        <div id="overlay" v-loading="qrCodeLoading">
+          <div id="qrCodeGenerated"></div>
+          <el-button type="primary" @click="qrCodeDivDisappear()">Done</el-button>
+        </div>
     </div>
 </template>
 
@@ -154,10 +159,12 @@ export default {
       loadingPOnboardingPage: true,
       personSigGenLoadBtn: false,
       submitLoadBtn: false,
+      qrCodeLoading: false,
       // Account change status.
       accountChangeStatus: false,
       // Dialogs.
       accountSwitchDialogVisible: false,
+      qrCodeOfIPFShashDialog: false,
       // Button disable tracker.
       processDataBtnState: false,
       getPersonSigBtnState: false,
@@ -355,13 +362,15 @@ export default {
         console.log('Person signature acquired.')
         this.personSigGenLoadBtn = false
         console.log('Person sig.: ', this.fullSignature)
-        this.$alert('Kindly copy your IPFS hash for proof', 'User information', {
+        this.$alert('Scan QR that follows to get the IPFS hash for proof', 'User information', {
           confirmButtonText: 'OK',
           callback: action => {
             this.$message({
               type: 'info',
               message: 'User consented'
             })
+            // Display the QR code by callign the method.
+            this.displayQRcode(this.IPFSHashOfhEcDR)
           }
         })
         this.active += 1 // Increment step to move to next stage.
@@ -371,6 +380,36 @@ export default {
         console.log('Error generating signature.', err)
         this.$message.error('Oops, Error getting person\'s signature')
       })
+    },
+    displayQRcode (userIPFShash) {
+      this.qrCodeLoading = true
+      console.log('Preparing QR code for: ', userIPFShash)
+      console.log('Generating QR code containing IPFS hash of person.')
+      const qrCode = new window.QRCodeStyling({
+        width: 200,
+        height: 200,
+        data: userIPFShash,
+        image: 'https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_%282019%29.svg',
+        dotsOptions: {
+          color: '#4267b2',
+          type: 'rounded'
+        },
+        backgroundOptions: {
+          color: '#e9ebee'
+        },
+        imageOptions: {
+          crossOrigin: 'anonymous',
+          margin: 20
+        }
+      })
+      console.log('Appending QR code to DOM.')
+      document.getElementById('overlay').style.display = 'block'
+      qrCode.append(document.getElementById('qrCodeGenerated'))
+      this.qrCodeLoading = false
+      this.active += 1 // Increment step to move to next stage.
+    },
+    qrCodeDivDisappear () {
+      document.getElementById('overlay').style.display = 'none'
     },
     anchorOnchain () {
       if (this.anchorOnBlockBtnState === false) {
@@ -482,5 +521,23 @@ legend {
   font-size: 0.71rem;
   font-style: italic;
   color: rgb(95, 64, 116);
+}
+
+#overlay {
+  position: fixed;
+  display: none; /* Should be hidden by on page load */
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0,0,0,0.5); /* Black background with opacity */
+  z-index: 2; /* Specify a stack order based on other divs */
+  cursor: pointer; /* Adds a pointer on hover */
+}
+
+#qrCodeGenerated {
+  margin-top: 15%;
 }
 </style>
