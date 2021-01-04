@@ -130,6 +130,16 @@ import web3 from '@/assets/js/web3Only'
 import { ABI, contractAddress, suppliedGas } from '@/assets/js/contractABI'
 // import convertIPFSstringToBytes from '@/assets/js/convertIPFShash.js'
 const ipfs = new window.Ipfs()
+const qrCode = new window.QRCodeStyling({
+  width: 200,
+  height: 200,
+  data: 'https://github.com/JustNETOrgani',
+  image: 'https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_%282019%29.svg',
+  dotsOptions: {
+    color: '#4267b2',
+    type: 'rounded'
+  }
+})
 
 export default {
   data () {
@@ -385,22 +395,9 @@ export default {
       this.qrCodeLoading = true
       console.log('Preparing QR code for: ', userIPFShash)
       console.log('Generating QR code containing IPFS hash of person.')
-      const qrCode = new window.QRCodeStyling({
-        width: 200,
-        height: 200,
-        data: userIPFShash,
-        image: 'https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_%282019%29.svg',
-        dotsOptions: {
-          color: '#4267b2',
-          type: 'rounded'
-        },
-        backgroundOptions: {
-          color: '#e9ebee'
-        },
-        imageOptions: {
-          crossOrigin: 'anonymous',
-          margin: 20
-        }
+      // Update the QR code instance.
+      qrCode.update({
+        data: 'https://ipfs.io/ipfs/' + userIPFShash
       })
       console.log('Appending QR code to DOM.')
       document.getElementById('overlay').style.display = 'block'
