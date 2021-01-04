@@ -257,7 +257,6 @@ export default {
               })
               // Person signs IPFShash to get signature.
               // Anchor data onto the blockchain via Smart Contract.
-              this.personOnboardLoadBtn = false
             } else {
               console.log('Submission error.')
               this.personOnboardLoadBtn = false
@@ -322,6 +321,7 @@ export default {
         this.$message('File upload to IPFS successful.')
         this.IPFSHashOfhEcDR = res[0].hash
         this.active += 1 // Increment step by 1 to move to next step.
+        this.personOnboardLoadBtn = false
         if (this.accountChangeStatus === false) {
           this.accountSwitchDialogVisible = true
           // Change state of processData button.
