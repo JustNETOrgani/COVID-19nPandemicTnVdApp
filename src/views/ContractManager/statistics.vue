@@ -356,6 +356,10 @@ export default {
               console.log('No data available.')
               this.getDataBtnLoadState = false
               this.ahfs = false
+              this.$message({
+                message: 'Sorry! No registered AHFs on BlockCovid.',
+                type: 'info'
+              })
               this.defaultPageItem = true
             } else {
               // Results is not empty hence get and display.
