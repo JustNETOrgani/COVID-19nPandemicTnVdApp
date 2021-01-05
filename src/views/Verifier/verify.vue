@@ -12,32 +12,38 @@
             <h2>Verification</h2>
             <p>A provably secure proof solidly backed by blockchain</p>
             <el-row>
-                <el-col :span="20" :offset="2">
+                <el-col :span="20" :offset="0">
                     <div class="grid-content bg-purple-dark">
                         <el-form
                             :model="verificationForm"
                             :rules="rules"
                             ref="verificationForm"
-                            label-width="90px">
-                            <el-form-item label="IPFS hash" prop="ifpsHash">
+                            label-width="25px">
+                            <el-col :span="18" :offset="0">
+                            <el-form-item>
                                 <el-input v-model="verificationForm.ifpsHash" placeholder="Enter IPFS hash."></el-input>
                             </el-form-item>
-                            <el-row>
-                                <el-col :span="5" :offset="0">
-                                    <p id="computedLabel">Person signature:</p>
-                                </el-col>
-                                <el-col :span="5" :offset="0">
-                                    <p id="formattedString">{{sigOnIPFShash}}</p>
-                                </el-col>
-                            </el-row>
-                            <el-form-item>
-                                <el-button type="primary" :loading="verifyBtnLoadState" @click="submitForm('verificationForm')">Verify</el-button>
-                                <el-button @click="resetForm('verificationForm')">Reset</el-button>
-                            </el-form-item>
+                            </el-col>
+                            <el-col :span="2" :offset="0">
+                              <p>or</p>
+                            </el-col>
+                            <el-col :span="4" :offset="0">
+                              <el-button type="info" round :loading="scanPersonQRcodeLoadBtn" @click="getPersonQRcode()">Scan QR code</el-button>
+                            </el-col>
                         </el-form>
                     </div>
                 </el-col>
             </el-row>
+            <el-row>
+              <el-col :span="5" :offset="1">
+                <p id="computedLabel">Person signature:</p>
+              </el-col>
+              <el-col :span="5" :offset="0">
+                <p id="formattedString">{{sigOnIPFShash}}</p>
+              </el-col>
+            </el-row>
+            <el-button type="primary" :loading="verifyBtnLoadState" @click="submitForm('verificationForm')">Verify</el-button>
+            <el-button @click="resetForm('verificationForm')">Reset</el-button>
         </div>
         <el-dialog
             title="Covid-19 test/vaccination status verification"
@@ -57,6 +63,10 @@
                 </template>
             </el-steps>
         </el-dialog>
+        <div id="overlay" v-loading="qrCodeScannerLoading">
+          <div id="qrCodeScanned"></div>
+          <el-button type="primary" @click="qrCodeDivDisappear()">Done</el-button>
+        </div>
     </div>
 </template>
 
@@ -84,6 +94,8 @@ export default {
       accountChangeStatus: false,
       // Loading states
       verifyBtnLoadState: false,
+      qrCodeScannerLoading: false,
+      scanPersonQRcodeLoadBtn: false,
       stepLoading: false,
       // Step
       step: 1,
@@ -135,6 +147,12 @@ export default {
     },
     resetForm (formName) {
       this.$refs[formName].resetFields()
+    },
+    qrCodeDivDisappear () {
+      document.getElementById('overlay').style.display = 'none'
+    },
+    getPersonQRcode () {
+      console.log('QR code scanner initiated.')
     },
     submitForm (formName) {
       if (this.verificationForm.ifpsHash !== '') {
@@ -365,5 +383,21 @@ export default {
   font-size: 0.9rem;
   font-style: italic;
   color: rgb(95, 64, 116);
+}
+#overlay {
+  position: fixed;
+  display: none; /* Should be hidden by on page load */
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0,0,0,0.5); /* Black background with opacity */
+  z-index: 2; /* Specify a stack order based on other divs */
+  cursor: pointer; /* Adds a pointer on hover */
+}
+#qrCodeScanned {
+  margin-top: 15%;
 }
 </style>
