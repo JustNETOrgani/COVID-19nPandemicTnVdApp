@@ -9,7 +9,7 @@
               <img id="verifyImg" src="../../assets/imgs/verify.png" />
             </el-col>
           </el-row>
-            <h2>Verification</h2>
+            <h2>Covid-19 test/vaccination verification</h2>
             <p>A provably secure proof solidly backed by blockchain</p>
             <el-row>
                 <el-col :span="20" :offset="0">
@@ -30,6 +30,10 @@
                             <el-col :span="4" :offset="0">
                               <el-button type="info" round :loading="scanPersonQRcodeLoadBtn" @click="getPersonQRcode()">Scan QR code</el-button>
                             </el-col>
+                            <el-col :span="12" :offset="4">
+                                <el-button type="primary" :loading="verifyBtnLoadState" @click="submitForm('verificationForm')">Verify</el-button>
+                                <el-button @click="resetForm('verificationForm')">Reset</el-button>
+                            </el-col>
                         </el-form>
                     </div>
                 </el-col>
@@ -42,8 +46,6 @@
                 <p id="formattedString">{{sigOnIPFShash}}</p>
               </el-col>
             </el-row>
-            <el-button type="primary" :loading="verifyBtnLoadState" @click="submitForm('verificationForm')">Verify</el-button>
-            <el-button @click="resetForm('verificationForm')">Reset</el-button>
         </div>
         <el-dialog
             title="Covid-19 test/vaccination status verification"
@@ -63,7 +65,7 @@
                 </template>
             </el-steps>
         </el-dialog>
-        <div id="overlay" v-loading="qrCodeScannerLoading">
+        <div id="overlay">
           <video id="qrCodeScanning"></video>
           <el-button type="primary" @click="qrCodeDivDisappear()">Done</el-button>
         </div>
@@ -94,7 +96,6 @@ export default {
       accountChangeStatus: false,
       // Loading states
       verifyBtnLoadState: false,
-      qrCodeScannerLoading: false,
       scanPersonQRcodeLoadBtn: false,
       stepLoading: false,
       // Step
@@ -155,28 +156,36 @@ export default {
     getPersonQRcode () {
       console.log('QR code scanner initiated.')
       this.scanPersonQRcodeLoadBtn = true
-      // Show the div.
-      document.getElementById('overlay').style.display = 'block'
       var scanner = new window.Instascan.Scanner({ video: document.getElementById('qrCodeScanning'), scanPeriod: 5, mirror: false })
       scanner.addListener('scan', function (content) {
-        console.log('QR code content: ', content)
-        this.$alert('IPFS hash: ' + content + '.', 'QR code scanned', {
-          confirmButtonText: 'OK',
-          callback: action => {
-            this.$message({
-              type: 'info',
-              message: 'QR code scan success'
-            })
-            this.performVerification(content)
-          }
-        })
-        this.scanPersonQRcodeLoadBtn = false
-        // QR code scanned. Stop webcam.
-        scanner.stop()
+        if (this.ipfsInputValidation(content) !== 0) {
+          console.log('QR code content: ', content)
+          this.$alert('IPFS hash: ' + content + '.', 'QR code scanned', {
+            confirmButtonText: 'OK',
+            callback: action => {
+              this.$message({
+                type: 'info',
+                message: 'QR code scan success'
+              })
+              this.performVerification(content)
+            }
+          })
+          this.scanPersonQRcodeLoadBtn = false
+          // QR code scanned. Stop webcam.
+          scanner.stop()
+        } else {
+          this.scanPersonQRcodeLoadBtn = false
+          this.$message({
+            message: 'Sorry! Invalid IPFS hash retrieved from scanned QR code.',
+            type: 'warning'
+          })
+        }
       })
       window.Instascan.Camera.getCameras().then(function (cameras) {
         if (cameras.length > 0) {
           // Webcam or cammera exist so start it.
+          // Show the div.
+          document.getElementById('overlay').style.display = 'block'
           scanner.start(cameras[0])
         } else {
           console.error('No cameras found on device.')
@@ -186,9 +195,10 @@ export default {
             type: 'warning'
           })
         }
-      }).catch(function (e) {
-        console.error(e)
-        alert(e)
+      }).catch(err => {
+        console.log('Sorry! No camera detected.', err)
+        this.scanPersonQRcodeLoadBtn = false
+        this.$message.error('Sorry! No camera detected.')
       })
     },
     submitForm (formName) {
