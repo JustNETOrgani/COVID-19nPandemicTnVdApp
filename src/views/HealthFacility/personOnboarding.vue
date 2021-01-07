@@ -46,7 +46,7 @@
                             </el-form-item>
                             <el-row>
                               <el-form-item label="**AHP's consent**" prop="authCheckBox">
-                                  <el-checkbox v-model="onboardPerson.authCheckBox">I fully understand the implication of this action.</el-checkbox>
+                                  <el-checkbox v-model="onboardPerson.authCheckBox">I understand the implication of this action.</el-checkbox>
                               </el-form-item>
                             </el-row>
                             <el-row>
@@ -64,7 +64,7 @@
                                     <p class="computedLabels">Hash of EcDR:</p>
                                 </el-col>
                                 <el-col :span="5" :offset="0">
-                                    <p class="formattedString">{{hEcDR}}</p>
+                                    <p id="formattedString_hEcDR">{{hEcDR}}</p>
                                 </el-col>
                             </el-row>
                             <el-row>
@@ -513,6 +513,11 @@ legend {
   text-align: left;
   font-size: 0.72rem;
   color: rgb(113, 140, 189);
+}
+#formattedString_hEcDR {
+  font-size: 0.66rem;
+  font-style: italic;
+  color: rgb(95, 64, 116);
 }
 .formattedString{
   font-size: 0.71rem;
