@@ -156,8 +156,10 @@ export default {
     getPersonQRcode () {
       console.log('QR code scanner initiated.')
       this.scanPersonQRcodeLoadBtn = true
-      var scanner = new window.Instascan.Scanner({ video: document.getElementById('qrCodeScanning'), scanPeriod: 5, mirror: false })
+      var scanner = new window.Instascan.Scanner({ video: document.getElementById('qrCodeScanning') })
       scanner.addListener('scan', function (content) {
+        console.log('Content retrieved: ', content)
+        alert('Content of QR code: ', content)
         if (this.ipfsInputValidation(content) !== 0) {
           console.log('QR code content: ', content)
           this.$alert('IPFS hash: ' + content + '.', 'QR code scanned', {
