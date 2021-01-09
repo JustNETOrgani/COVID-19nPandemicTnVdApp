@@ -86,7 +86,7 @@ export default {
 }
 #footerDiv {
   position: absolute;
-  top: 38em;
+  top: 36em;
   left: 0;
   width: 100%;
   height: 14%;
