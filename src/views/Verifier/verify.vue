@@ -66,7 +66,7 @@
             </el-steps>
         </el-dialog>
         <div id="overlay">
-          <video id="qrCodeScanning"></video>
+          <div id="qrCodeScanning"></div>
           <el-button type="primary" @click="qrCodeDivDisappear()">Done</el-button>
         </div>
     </div>
@@ -156,52 +156,15 @@ export default {
     getPersonQRcode () {
       console.log('QR code scanner initiated.')
       this.scanPersonQRcodeLoadBtn = true
-      var scanner = new window.Instascan.Scanner({ video: document.getElementById('qrCodeScanning') })
-      scanner.addListener('scan', function (content) {
-        console.log('Content retrieved: ', content)
-        alert('Content of QR code: ', content)
-        if (this.ipfsInputValidation(content) !== 0) {
-          console.log('QR code content: ', content)
-          this.$alert('IPFS hash: ' + content + '.', 'QR code scanned', {
-            confirmButtonText: 'OK',
-            callback: action => {
-              this.$message({
-                type: 'info',
-                message: 'QR code scan success'
-              })
-              this.performVerification(content)
-            }
-          })
-          this.scanPersonQRcodeLoadBtn = false
-          // QR code scanned. Stop webcam.
-          scanner.stop()
-        } else {
-          this.scanPersonQRcodeLoadBtn = false
-          this.$message({
-            message: 'Sorry! Invalid IPFS hash retrieved from scanned QR code.',
-            type: 'warning'
-          })
-        }
-      })
-      window.Instascan.Camera.getCameras().then(function (cameras) {
-        if (cameras.length > 0) {
-          // Webcam or cammera exist so start it.
-          // Show the div.
-          document.getElementById('overlay').style.display = 'block'
-          scanner.start(cameras[0])
-        } else {
-          console.error('No cameras found on device.')
-          this.scanPersonQRcodeLoadBtn = false
-          this.$message({
-            message: 'Sorry! No Webcam or Camera on this device.',
-            type: 'warning'
-          })
-        }
-      }).catch(err => {
-        console.log('Sorry! No camera detected.', err)
-        this.scanPersonQRcodeLoadBtn = false
-        this.$message.error('Sorry! No camera detected.')
-      })
+      const config = {
+        fps: 10,
+        qrbox: 250
+      }
+      const html5QrcodeScanner = new window.Html5QrcodeScanner('qrCodeScanning', config)
+      html5QrcodeScanner.render(this.onScanSuccess)
+    },
+    onScanSuccess (qrCodeMessage) {
+      console.log('QR code scan result:', qrCodeMessage)
     },
     submitForm (formName) {
       if (this.verificationForm.ifpsHash !== '') {
