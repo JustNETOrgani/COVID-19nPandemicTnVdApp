@@ -151,6 +151,7 @@ export default {
     },
     qrCodeDivDisappear () {
       document.getElementById('overlay').style.display = 'none'
+      this.scanPersonQRcodeLoadBtn = false
       // window.location.reload() // Reload page. This will close camera.
     },
     getPersonQRcode () {
