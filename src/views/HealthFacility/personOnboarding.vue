@@ -50,7 +50,7 @@
                               </el-form-item>
                             </el-row>
                             <el-row>
-                                <el-button :loading="personOnboardLoadBtn" @click="processFormData('onboardPerson')">Process data</el-button>
+                                <el-button :disabled='isDisabled' :loading="personOnboardLoadBtn" @click="processFormData('onboardPerson')">Process data</el-button>
                                 <el-button @click="resetForm('onboardPerson')">Reset</el-button>
                             </el-row>
                         </el-form>
@@ -148,7 +148,7 @@ export default {
         centerID: '',
         tStatus: '',
         vStatus: '',
-        authCheckBox: ''
+        authCheckBox: false
       },
       // Steps.
       active: 0,
@@ -208,6 +208,11 @@ export default {
   watch: {
     'currentEthAddress' () {
       this.switchAccount()
+    }
+  },
+  computed: {
+    isDisabled: function () {
+      return !this.onboardPerson.authCheckBox
     }
   },
   methods: {
