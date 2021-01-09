@@ -66,7 +66,7 @@
             </el-steps>
         </el-dialog>
         <div id="overlay">
-          <div id="qrCodeScanning"></div>
+          <div id="qrCodeScanning" width="500px"></div>
           <el-button type="primary" @click="qrCodeDivDisappear()">Done</el-button>
         </div>
     </div>
@@ -151,7 +151,7 @@ export default {
     },
     qrCodeDivDisappear () {
       document.getElementById('overlay').style.display = 'none'
-      window.location.reload() // Reload page. This will close camera.
+      // window.location.reload() // Reload page. This will close camera.
     },
     getPersonQRcode () {
       console.log('QR code scanner initiated.')
@@ -161,10 +161,32 @@ export default {
         qrbox: 250
       }
       const html5QrcodeScanner = new window.Html5QrcodeScanner('qrCodeScanning', config)
-      html5QrcodeScanner.render(this.onScanSuccess)
+      document.getElementById('overlay').style.display = 'block'
+      html5QrcodeScanner.render(this.onScanSuccess, this.onScanFailure)
     },
     onScanSuccess (qrCodeMessage) {
       console.log('QR code scan result:', qrCodeMessage)
+      // Expected format: 'https://ipfs.io/ipfs/' + userIPFShash.
+      // Get last 46 characters to retrieve only the ipfs hash.
+      this.$message({
+        message: 'QR code successfully scanned.',
+        type: 'success'
+      })
+      var retrievedIPFShash = (qrCodeMessage.substr(qrCodeMessage.length - 46)).replace(/"/g, '') // Remove the double quotes.
+      if (this.ipfsInputValidation(retrievedIPFShash) !== 0) {
+        this.scanPersonQRcodeLoadBtn = false
+        // Person verification process.
+        this.performVerification(retrievedIPFShash)
+      } else {
+        this.$message({
+          message: 'Sorry! Invalid IPFS hash received from QR code. Please, scan BlockCovid compatible QR code.',
+          type: 'warning'
+        })
+      }
+    },
+    onScanFailure (error) {
+    // handle scan failure, usually better to ignore and keep scanning
+      console.log('QR scan error: ', error)
     },
     submitForm (formName) {
       if (this.verificationForm.ifpsHash !== '') {
@@ -416,7 +438,7 @@ export default {
 }
 #qrCodeScanning {
   width: 400px;
-  height: 400px;
   margin-top: 4%;
+  margin-left: 30%;
 }
 </style>
