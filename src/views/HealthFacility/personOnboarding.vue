@@ -134,7 +134,7 @@ const qrCode = new window.QRCodeStyling({
   width: 200,
   height: 200,
   data: 'https://github.com/JustNETOrgani',
-  image: 'https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_%282019%29.svg',
+  image: 'https://user-images.githubusercontent.com/44321289/104082810-0c3de900-5274-11eb-95c1-ace8c24356d4.png',
   dotsOptions: {
     color: '#4267b2',
     type: 'rounded'
