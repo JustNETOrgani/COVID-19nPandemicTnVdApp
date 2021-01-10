@@ -307,7 +307,7 @@ export default {
       // Perform required task and return true.
       var blockCovid = new web3.eth.Contract(ABI, contractAddress, { defaultGas: suppliedGas })// End of ABi Code from Remix.
       console.log('Contract instance for access type retrieval created.')
-      blockCovid.getPastEvents('onboarded', { fromBlock: 0, toBlock: 'latest' },
+      blockCovid.getPastEvents('personUpdated', { fromBlock: 0, toBlock: 'latest' },
         (err, results) => {
           if (err) {
             this.updatedTnVData = false
