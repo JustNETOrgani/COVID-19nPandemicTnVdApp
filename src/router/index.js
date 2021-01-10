@@ -37,6 +37,11 @@ const routes = [
     name: 'personOnboard',
     component: () => import('@/views/HealthFacility/personOnboarding.vue')
   },
+  {
+    path: '/HealthFacility/ahfStatistics',
+    name: 'ahfSpecificStats',
+    component: () => import('@/views/HealthFacility/ahfStatistics.vue')
+  },
   // Verifiers.
   {
     path: '/Verifier/verify',
