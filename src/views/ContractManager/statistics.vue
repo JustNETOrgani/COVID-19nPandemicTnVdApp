@@ -24,7 +24,8 @@
                               v-model="contractDeployerTasks.deployerTask"
                               style="width:100%"
                               placeholder="Please select the desired task.">
-                              <el-option label="Get tests and vaccination results" value="allTestsNvacResults"></el-option>
+                              <el-option label="Get onboarded tests and vaccination results" value="allTestsNvacResults"></el-option>
+                              <el-option label="Get updated tests and vaccination results" value="updatedTestsNvacResults"></el-option>
                               <el-option label="AHF-specific records" value="AHFspecific"></el-option>
                               <el-option label="AHFs" value="AHFs"></el-option>
                           </el-select>
@@ -50,6 +51,23 @@
                 >
                 <!--Building table body-->
                 <template v-for="(item, index) in allTestsNvactableLabel">
+                  <el-table-column
+                    :key="index"
+                    :prop="item.prop"
+                    :label="item.label" :width="item.width">
+                  </el-table-column>
+                </template>
+              </el-table>
+            </div>
+            <div v-else-if="updatedTnVData" v-loading="updatedTnVDataLoading">
+                <p class="infoAtGlance">Updated data</p>
+                <el-table
+                :data="pageTableData"
+                style="width: 100%"
+                height="550px"
+                >
+                <!--Building table body-->
+                <template v-for="(item, index) in updatedTestsNvactableLabel">
                   <el-table-column
                     :key="index"
                     :prop="item.prop"
@@ -121,11 +139,13 @@ export default {
       // Array to hold requested IPFS hashes of papers ends.
       // v-if states.
       getAllTestsNvac: false,
+      updatedTnVData: false,
       ahfSpecificData: false,
       ahfs: false,
       defaultPageItem: false,
       // Loading states.
       getDataBtnLoadState: false,
+      updatedTnVDataLoading: false,
       allTestsNvacLoading: false,
       ahfSpecificLoading: false,
       ahfLoading: false,
@@ -138,6 +158,13 @@ export default {
       },
       // Table labels begin.
       allTestsNvactableLabel: [
+        { label: 'Persons tested', prop: 'totalTests', width: '130px' },
+        { label: 'Number of Positives', prop: 'numOfTotalPos', width: '110px' },
+        { label: 'Number of Negatives', prop: 'numOfTotalNeg', width: '110px' },
+        { label: 'Number of persons vaccinated', prop: 'numOfVacc', width: '160px' },
+        { label: 'Number of persons not vaccinated', prop: 'numOfNonVacc', width: '160px' }
+      ],
+      updatedTestsNvactableLabel: [
         { label: 'Persons tested', prop: 'totalTests', width: '130px' },
         { label: 'Number of Positives', prop: 'numOfTotalPos', width: '110px' },
         { label: 'Number of Negatives', prop: 'numOfTotalNeg', width: '110px' },
@@ -200,6 +227,8 @@ export default {
           // Call different methods here based on journal's selection.
           if (this.contractDeployerTasks.deployerTask === 'allTestsNvacResults') {
             this.getAllTestsAndVaccResults()
+          } else if (this.contractDeployerTasks.deployerTask === 'updatedTestsNvacResults') {
+            this.getupdatedTestsNvacRes()
           } else if (this.contractDeployerTasks.deployerTask === 'AHFspecific') {
             this.getAHFspecificTnVresults()
           } else if (this.contractDeployerTasks.deployerTask === 'AHFs') {
@@ -220,6 +249,7 @@ export default {
       this.allTestsNvacLoading = true
       this.ahfs = false
       this.ahfSpecificData = false
+      this.updatedTnVData = false
       this.defaultPageItem = false
       // Perform required task and return true.
       var blockCovid = new web3.eth.Contract(ABI, contractAddress, { defaultGas: suppliedGas })// End of ABi Code from Remix.
@@ -237,7 +267,7 @@ export default {
               this.getAllTestsNvac = false
               this.defaultPageItem = true
               this.$message({
-                message: 'Sorry! No AHFs registered on BlockCovid.',
+                message: 'Sorry! No person onboarded on BlockCovid.',
                 type: 'info'
               })
             } else {
@@ -268,6 +298,61 @@ export default {
           }
         })
     },
+    getupdatedTestsNvacRes () {
+      this.pageTableData.splice(0, this.pageTableData.length) // Remove all previously stored values.
+      this.updatedTnVDataLoading = true
+      this.ahfs = false
+      this.ahfSpecificData = false
+      this.defaultPageItem = false
+      // Perform required task and return true.
+      var blockCovid = new web3.eth.Contract(ABI, contractAddress, { defaultGas: suppliedGas })// End of ABi Code from Remix.
+      console.log('Contract instance for access type retrieval created.')
+      blockCovid.getPastEvents('onboarded', { fromBlock: 0, toBlock: 'latest' },
+        (err, results) => {
+          if (err) {
+            this.updatedTnVData = false
+            this.updatedTnVDataLoading = false
+            this.$message.error('Sorry! Error retrieving data. Please, try again later.')
+          } else {
+          // Get the data and display.
+            if (Object.keys(results).length === 0) {
+              console.log('No data available.')
+              this.getDataBtnLoadState = false
+              this.updatedTnVDataLoading = false
+              this.updatedTnVData = false
+              this.defaultPageItem = true
+              this.$message({
+                message: 'Sorry! No person updated record exist on BlockCovid.',
+                type: 'info'
+              })
+            } else {
+              // Results is not empty hence get and display.
+              console.log('Results from Contract: ', results)
+              console.log('Total: ', Object.keys(results).length)
+              var testStatus = []
+              var vaccStatus = []
+              for (let i = 0; i < Object.keys(results).length; i++) {
+                testStatus.push(results[i].returnValues.tStatus)
+                vaccStatus.push(results[i].returnValues.vStatus)
+              }
+              // Get counts regarding number of occurrences of each item in the array.
+              var tOccurences = this.getCounts(testStatus)
+              var vOccurences = this.getCounts(vaccStatus)
+              for (let i = 0; i < 1; i++) {
+                this.pageTableData[i] = []
+                this.pageTableData[i].totalTests = Object.keys(results).length
+                this.pageTableData[i].numOfTotalPos = tOccurences.Positive
+                this.pageTableData[i].numOfTotalNeg = tOccurences.Negative
+                this.pageTableData[i].numOfVacc = vOccurences.vaccinated
+                this.pageTableData[i].numOfNonVacc = vOccurences['Not Vaccinated']
+              }
+              this.getDataBtnLoadState = false
+              this.updatedTnVDataLoading = false
+              this.updatedTnVData = true
+            }
+          }
+        })
+    },
     getAHFspecificTnVresults () {
       this.$prompt('Please enter Ethereum address of the AHF.', 'Information required', {
         confirmButtonText: 'Continue',
@@ -280,6 +365,7 @@ export default {
           this.ahfSpecificLoading = true
           this.ahfs = false
           this.getAllTestsNvac = false
+          this.updatedTnVData = false
           this.defaultPageItem = false
           // Perform required task and return true.
           var blockCovid = new web3.eth.Contract(ABI, contractAddress, { defaultGas: suppliedGas })// End of ABi Code from Remix.
@@ -340,6 +426,7 @@ export default {
       this.pageTableData.splice(0, this.pageTableData.length) // Remove all previously stored values.
       this.ahfLoading = true
       this.getAllTestsNvac = false
+      this.updatedTnVData = false
       this.ahfSpecificData = false
       this.defaultPageItem = false
       // Perform required task and return true.
