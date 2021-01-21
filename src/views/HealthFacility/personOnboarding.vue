@@ -258,7 +258,10 @@ export default {
                 centerID: this.onboardPerson.centerID,
                 tStatus: this.onboardPerson.tStatus,
                 vStatus: this.onboardPerson.vStatus,
-                timeStamp: new Date().getTime()
+                tTime: new Date().getTime()
+              }
+              if (this.onboardPerson.vStatus === 'vaccinated') {
+                data.vTime = new Date().getTime()
               }
               console.log('Data: ', data)
               // Encrypt data using user public key ---> EcDR
