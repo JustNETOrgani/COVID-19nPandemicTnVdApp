@@ -155,6 +155,7 @@ export default {
       // Dynamic variables.
       EcDR: '',
       hEcDR: '',
+      testTime: '',
       IPFSHashOfhEcDR: '',
       fullSignature: '',
       signature_substring: '',
@@ -258,10 +259,13 @@ export default {
                 centerID: this.onboardPerson.centerID,
                 tStatus: this.onboardPerson.tStatus,
                 vStatus: this.onboardPerson.vStatus,
-                tTime: new Date().getTime()
+                tTime: Math.round(+new Date() / 1000)// unix timestamp
               }
+              this.testTime = data.tTime
               if (this.onboardPerson.vStatus === 'vaccinated') {
-                data.vTime = new Date().getTime()
+                data.vTime = Math.round(+new Date() / 1000)// unix timestamp
+              } else {
+                data.vTime = ''
               }
               console.log('Data: ', data)
               // Encrypt data using user public key ---> EcDR
@@ -329,7 +333,7 @@ export default {
       })
     },
     pushToIPFShub () {
-      var encryptedDataToSendToJviaIPFS = JSON.stringify({ encryptedData: this.EcDR, signedByAHP: this.sigOfAHP })
+      var encryptedDataToSendToJviaIPFS = JSON.stringify({ encryptedData: this.EcDR, signedByAHP: this.sigOfAHP, testTime: this.testTime })
       // console.log('Connecting to IPFS.')
       const MyBuffer = window.Ipfs.Buffer
       var dataToBuffer = MyBuffer.from(encryptedDataToSendToJviaIPFS)
@@ -435,7 +439,7 @@ export default {
               console.log('Trans. Block Number is: ', receipt.blockNumber)
               // Display success note.
               this.active += 1 // Increment step.
-              this.$alert('Person successfully anchored on BlockCovid.', 'Creation success', {
+              this.$alert('Person successfully anchored on BlockCovid-19.', 'Creation success', {
                 confirmButtonText: 'OK',
                 callback: action => {
                   this.$message({
@@ -443,7 +447,7 @@ export default {
                     message: 'Transaction successful'
                   })
                   this.anchorOnBlockBtnState = true
-                  this.getUserChoiceForRedirect()
+                  // this.getUserChoiceForRedirect() // Allow user to decide.
                 }
               })
               this.$message({
