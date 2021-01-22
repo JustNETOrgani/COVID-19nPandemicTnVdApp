@@ -118,7 +118,7 @@ export default {
                     console.log('Trans. Block Number is: ', receipt.blockNumber)
                     // Display success note.
                     this.registAHFBtnLoadState = false
-                    this.$alert('The AHF ' + data.ahfName + ' has successfully been created on BlockCovid.', 'Creation success', {
+                    this.$alert(data.ahfName + ' has successfully been created on BlockCovid-19.', 'Creation success', {
                       confirmButtonText: 'OK',
                       callback: action => {
                         this.$message({
