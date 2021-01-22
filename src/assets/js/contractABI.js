@@ -196,49 +196,6 @@ var ABI = [
     constant: true,
     inputs: [
       {
-        name: '',
-        type: 'address'
-      }
-    ],
-    name: 'person',
-    outputs: [
-      {
-        name: 'personAddress',
-        type: 'address'
-      },
-      {
-        name: 'IPFShash',
-        type: 'string'
-      },
-      {
-        name: 'hashOfEncCovDigRec',
-        type: 'bytes32'
-      },
-      {
-        name: 'tStatus',
-        type: 'string'
-      },
-      {
-        name: 'vStatus',
-        type: 'string'
-      },
-      {
-        name: 'signature',
-        type: 'string'
-      }
-    ],
-    payable: false,
-    stateMutability: 'view',
-    type: 'function'
-  },
-  {
-    constant: true,
-    inputs: [
-      {
-        name: 'personAddress',
-        type: 'address'
-      },
-      {
         name: 'IPFShash',
         type: 'string'
       },
@@ -268,7 +225,7 @@ var ABI = [
   }
 ]
 
-var contractAddress = '0x3A04805998CDE6f2A8075BEa45744857909e49b5'
+var contractAddress = '0x1Bba9445114488422f7794aBC56F0b0436cEFF9a'
 
 var suppliedGas = 3000000
 
