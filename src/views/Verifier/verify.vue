@@ -268,7 +268,7 @@ export default {
                   keyToUse = Object.keys(this.VerifyResult)[currentStep]
                   // Smart contract and other logic continues.
                   // This is call operation. Any account can be used. It cost zero Eth.
-                  blockCovid.methods.verifyPersonStatus(this.currentAddress, ipfsHash, this.hEcDR, this.fullSignature).call({ from: this.currentAddress }).then(res => {
+                  blockCovid.methods.verifyPersonStatus(ipfsHash, this.hEcDR, this.fullSignature).call({ from: this.currentAddress }).then(res => {
                     // console.log('Response from Contract: ', res)
                     var getFirstIndex = Object.keys(res)[0]
                     var accessedFirstRetData = res[getFirstIndex]
@@ -291,7 +291,7 @@ export default {
                       })
                       var getSecondIndex = Object.keys(res)[1]
                       var accessedSecondRetData = res[getSecondIndex]
-                      this.$alert('Test result: ' + accessedFirstRetData + '. ' + 'Vaccination Status: ' + accessedSecondRetData + '.', 'Proof success', {
+                      this.$alert('Test result : ' + accessedFirstRetData + '.  ' + ' Vaccination Status : ' + accessedSecondRetData + '.  ' + 'Date/Time : ' + this.convertUnixTimestamp(EcDRwithSig.testTime) + '.', 'Proof success', {
                         confirmButtonText: 'OK',
                         callback: action => {
                           this.$message({
@@ -371,6 +371,21 @@ export default {
         })
         this.$router.push('/')
       })
+    },
+    convertUnixTimestamp (unixTimestamp) {
+      // Convert UNIX Time to Date/Time
+      console.log('Unix time: ', unixTimestamp)
+      var monthsArr = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+      var date = new Date(unixTimestamp * 1000)
+      var year = date.getFullYear()
+      var month = monthsArr[date.getMonth()]
+      var day = date.getDate()
+      var hours = date.getHours()
+      var minutes = '0' + date.getMinutes()
+      var seconds = '0' + date.getSeconds()
+      // Display date time in MM-dd-yyyy h:m:s format
+      var convertedTime = month + '-' + day + '-' + year + ' ' + hours + ':' + minutes.substr(-2) + ':' + seconds.substr(-2)
+      return convertedTime
     }
   },
   computed: {
