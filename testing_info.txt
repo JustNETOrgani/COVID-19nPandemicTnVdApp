@@ -4,8 +4,8 @@ Ganache Mn: excuse immune ginger error maid exile upgrade miss task private chea
 
 Acc0[ContractDeployer]: 0x3c764142878ecf10fa712336cde5cc778878a294
 
-Acc1:[Hospital_A]: 0xec5bf0f1de02e5fc8fde5adebe12bd4239535b7c
-Acc2:[Hospital_B]: 0x136f79926505f76c3252a921937dd5ab18ded515
+Acc1:[HospitalA]: 0xec5bf0f1de02e5fc8fde5adebe12bd4239535b7c
+Acc2:[HospitalB]: 0x136f79926505f76c3252a921937dd5ab18ded515
 Acc3:[Verifier]: 0xA179a6f917D6cdC0cEA465DC20086ff1318394a5
 Person1:  0x5C5796233bA1B2BC91a067EFb41638234bd0a805
 Person2:  0x50942a4cf3d43854be8ce2025361d8571b05b05a
@@ -26,10 +26,10 @@ Sample Public Key:  0x2590bfab99298edec2572a0dd4a2325264c4e8ae698d81c3670e370fa1
 **************************************************************************************
 
 Person1
-hEcDR: 0x931f1616bc343e91985dc900473add8ba098064806bd5d115df15fa69977f21f
-IPFS hash: QmWNWLzEAt3Bik6m8GKc1p8zJGc5LGtNDFavSgsAJVRZfn
+hEcDR: 0x39323beef3b47573fc696eb1e54ae81c58215bb6a5fe6ade91caefa2ec7f5474
+IPFS hash: Qma6yVcV1BgcJMLxQMKhVWjw9Dg1L7yDaXQhMn63nxC5oR
 Person Address: 0x5c5796233ba1b2bc91a067efb41638234bd0a805
-Sig.:  0x2fdcc598f8581a120f5211...ca48ad50218942992d9cca1b
+Sig.:  0xe6b1da6053d207111ce020...eb2f6f415bfc7dbe8bf1961b
 
 Person2
 hEcDR: 0xc30a3c45fd2ee7bd6c469850b5dba89dc1947e937dbb969e992ab601cc22f59c
