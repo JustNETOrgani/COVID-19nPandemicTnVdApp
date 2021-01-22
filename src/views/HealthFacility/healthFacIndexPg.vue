@@ -20,6 +20,7 @@
                         <el-menu-item-group>
                         <span slot="title">User registration</span>
                         <el-menu-item index="1-1">Onboard user</el-menu-item>
+                        <el-menu-item index="1-2"><el-link :underline="false" href="personUpdate">Update user</el-link></el-menu-item>
                         </el-menu-item-group>
                         <el-menu-item-group title="AHF Admin">
                         <el-menu-item index="1-3">Verify AHP signature</el-menu-item>
