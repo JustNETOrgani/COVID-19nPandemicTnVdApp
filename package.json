@@ -12,6 +12,8 @@
     "core-js": "^3.6.5",
     "element-ui": "^2.14.1",
     "ethereumjs-util": "^7.0.7",
+    "ipfs-only-hash": "^4.0.0",
+    "merkletreejs": "^0.2.18",
     "tweetnacl": "^1.0.3",
     "tweetnacl-util": "^0.15.1",
     "vue": "^2.6.11",
