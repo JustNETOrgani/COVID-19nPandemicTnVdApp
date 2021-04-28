@@ -21,7 +21,7 @@
                             label-width="25px">
                             <el-col :span="18" :offset="0">
                             <el-form-item>
-                                <el-input v-model="verificationForm.ifpsHash" placeholder="Enter IPFS hash."></el-input>
+                                <el-input v-model="verificationForm.ifpsHash" placeholder="Enter IPFS hash"></el-input>
                             </el-form-item>
                             </el-col>
                             <el-col :span="2" :offset="0">
@@ -29,6 +29,11 @@
                             </el-col>
                             <el-col :span="4" :offset="0">
                               <el-button type="info" round :loading="scanPersonQRcodeLoadBtn" @click="getPersonQRcode()">Scan QR code</el-button>
+                            </el-col>
+                            <el-col :span="18" :offset="0">
+                            <el-form-item>
+                                <el-input v-model="verificationForm.hashedID" placeholder="Enter Hash of ID"></el-input>
+                            </el-form-item>
                             </el-col>
                             <el-col :span="12" :offset="4">
                                 <el-button type="primary" :loading="verifyBtnLoadState" @click="submitForm('verificationForm')">Verify</el-button>
@@ -85,7 +90,8 @@ export default {
   data () {
     return {
       verificationForm: {
-        ifpsHash: ''
+        ifpsHash: '',
+        hashedID: ''
       },
       enteredIPFShash: '',
       hEcDR: '',
@@ -167,17 +173,21 @@ export default {
     },
     onScanSuccess (qrCodeMessage) {
       console.log('QR code scan result:', qrCodeMessage)
-      // Expected format: 'https://ipfs.io/ipfs/' + userIPFShash.
+      // Expected format changed: 'https://ipfs.io/ipfs/' + userIPFShash.
+      // Current format: userIPFShash+HashedID (46+66)
       // Get last 46 characters to retrieve only the ipfs hash.
       this.$message({
         message: 'QR code successfully scanned.',
         type: 'success'
       })
-      var retrievedIPFShash = (qrCodeMessage.substr(qrCodeMessage.length - 46)).replace(/"/g, '') // Remove the double quotes.
+      var retrievedIPFShash = (qrCodeMessage.substr(0, 46)).replace(/"/g, '') // Get first 46 characters and Remove the double quotes.
+      var hashedID = (qrCodeMessage.substr(qrCodeMessage.length - 66)).replace(/"/g, '') // Get last 66 characters and Remove the double quotes.
+      console.log('Retrieved ipfs hash: ', retrievedIPFShash)
+      console.log('Retrieved hashed ID: ', hashedID)
       if (this.ipfsInputValidation(retrievedIPFShash) !== 0) {
         this.scanPersonQRcodeLoadBtn = false
         // Person verification process.
-        this.performVerification(retrievedIPFShash)
+        this.performVerification(retrievedIPFShash, hashedID)
       } else {
         this.$message({
           message: 'Sorry! Invalid IPFS hash received from QR code. Please, scan BlockCovid compatible QR code.',
@@ -220,15 +230,16 @@ export default {
         })
       }
     },
-    performVerification (ipfsHash) {
+    performVerification (ipfsHash, hashedID) {
       this.dialogVisible = true
       // this.stepLoading = true
       // Create array object for steps.
       this.VerifyResult = {
-        1: { step: '1', name: 'Getting encrypted data', status: 'wait' },
-        2: { step: '2', name: 'Hashing encrypted data', status: 'wait' },
-        3: { step: '3', name: 'Acquiring Person signature', status: 'wait' },
-        4: { step: '4', name: 'Verifying in Smart Contract', status: 'wait' }
+        1: { step: '1', name: 'Retrieving header', status: 'wait' },
+        2: { step: '2', name: 'Getting encrypted data', status: 'wait' },
+        3: { step: '3', name: 'Hashing encrypted data', status: 'wait' },
+        4: { step: '4', name: 'Acquiring Person signature', status: 'wait' },
+        5: { step: '5', name: 'Verifying in Smart Contract', status: 'wait' }
       }
       this.enteredIPFShash = ipfsHash
       // Steps ---> TODO
@@ -237,7 +248,9 @@ export default {
         var EcDRwithSig = JSON.parse(retrievedData.toString()) // Convert to string and parse as JSON object.
         var currentStep = 0
         var keyToUse = Object.keys(this.VerifyResult)[currentStep]
-        if (Object.keys(EcDRwithSig).length > 0 && 'encryptedData' in EcDRwithSig) {
+        if (Object.keys(EcDRwithSig).length > 0 && 'timeStamp' in EcDRwithSig) {
+          // Get header.
+
           // Data in IPFS pulled object.
           console.log('Encrypted data: ', EcDRwithSig)
           // Change status.
