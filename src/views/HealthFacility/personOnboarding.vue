@@ -268,8 +268,6 @@ export default {
               }
               this.timeStamp = data.tTime
               console.log('Data: ', data)
-              // Prepare data for Merkle Tree.
-              this.merkeTreeData.push(data.tStatus, data.vStatus, this.timeStamp, data.userID)
               // Encrypt data using user public key ---> EcDR
               this.EcDR = asymmEncrypt(this.AHPkeyGenerated, data, this.pubKeyOfPerson)
               console.log('EcDR: ', this.EcDR)
@@ -280,6 +278,8 @@ export default {
                 getHash(data.userID).then(HID => {
                   this.HashedID = HID
                   console.log('Hashed ID: ', this.HashedID)
+                  // Prepare data for Merkle Tree.
+                  this.merkeTreeData.push(data.tStatus, data.vStatus, this.timeStamp, this.HashedID)
                   // AHP signs hEcDR to get signature. --->AHPsignature
                   this.signatureOfAHP() // Includes push to IPFS.
                 })
