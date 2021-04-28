@@ -2,109 +2,7 @@
 
 var ABI = [
   {
-    constant: false,
-    inputs: [
-      {
-        name: 'personAddress',
-        type: 'address'
-      },
-      {
-        name: 'IPFShash',
-        type: 'string'
-      },
-      {
-        name: 'hashOfEncCovDigRec',
-        type: 'bytes32'
-      },
-      {
-        name: 'tStatus',
-        type: 'string'
-      },
-      {
-        name: 'vStatus',
-        type: 'string'
-      },
-      {
-        name: 'signature',
-        type: 'string'
-      }
-    ],
-    name: 'personOnboarding',
-    outputs: [
-      {
-        name: '',
-        type: 'bool'
-      }
-    ],
-    payable: false,
-    stateMutability: 'nonpayable',
-    type: 'function'
-  },
-  {
-    constant: false,
-    inputs: [
-      {
-        name: 'AHF_name',
-        type: 'string'
-      },
-      {
-        name: 'AHF_address',
-        type: 'address'
-      }
-    ],
-    name: 'registerHealthFacility',
-    outputs: [
-      {
-        name: '',
-        type: 'bool'
-      }
-    ],
-    payable: false,
-    stateMutability: 'nonpayable',
-    type: 'function'
-  },
-  {
-    constant: false,
-    inputs: [
-      {
-        name: 'personAddress',
-        type: 'address'
-      },
-      {
-        name: 'IPFShash_new',
-        type: 'string'
-      },
-      {
-        name: 'hashOfEncCovDigRec_new',
-        type: 'bytes32'
-      },
-      {
-        name: 'tStatus_new',
-        type: 'string'
-      },
-      {
-        name: 'vStatus_new',
-        type: 'string'
-      },
-      {
-        name: 'signature_new',
-        type: 'string'
-      }
-    ],
-    name: 'updatePersonTestStatus',
-    outputs: [
-      {
-        name: '',
-        type: 'bool'
-      }
-    ],
-    payable: false,
-    stateMutability: 'nonpayable',
-    type: 'function'
-  },
-  {
     inputs: [],
-    payable: false,
     stateMutability: 'nonpayable',
     type: 'constructor'
   },
@@ -112,18 +10,34 @@ var ABI = [
     anonymous: false,
     inputs: [
       {
+        indexed: false,
+        internalType: 'string',
+        name: 'nameOfappHealthFac',
+        type: 'string'
+      },
+      {
+        indexed: false,
+        internalType: 'address',
+        name: 'addOfAHF',
+        type: 'address'
+      }
+    ],
+    name: 'approvedHFdone',
+    type: 'event'
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
         indexed: true,
+        internalType: 'address',
         name: 'txInitiator',
         type: 'address'
       },
       {
         indexed: false,
-        name: 'tStatus',
-        type: 'string'
-      },
-      {
-        indexed: false,
-        name: 'vStatus',
+        internalType: 'string',
+        name: 'ipfsHash',
         type: 'string'
       }
     ],
@@ -135,17 +49,14 @@ var ABI = [
     inputs: [
       {
         indexed: true,
+        internalType: 'address',
         name: 'txInitiator',
         type: 'address'
       },
       {
         indexed: false,
-        name: 'tStatus',
-        type: 'string'
-      },
-      {
-        indexed: false,
-        name: 'vStatus',
+        internalType: 'string',
+        name: 'ipfsHash',
         type: 'string'
       }
     ],
@@ -153,26 +64,9 @@ var ABI = [
     type: 'event'
   },
   {
-    anonymous: false,
     inputs: [
       {
-        indexed: false,
-        name: 'nameOfappHealthFac',
-        type: 'string'
-      },
-      {
-        indexed: false,
-        name: 'addOfAHF',
-        type: 'address'
-      }
-    ],
-    name: 'approvedHFdone',
-    type: 'event'
-  },
-  {
-    constant: true,
-    inputs: [
-      {
+        internalType: 'address',
         name: '',
         type: 'address'
       }
@@ -180,30 +74,145 @@ var ABI = [
     name: 'approvedHC',
     outputs: [
       {
+        internalType: 'string',
         name: 'AHF_name',
         type: 'string'
       },
       {
+        internalType: 'address',
         name: 'AHF_address',
         type: 'address'
       }
     ],
-    payable: false,
     stateMutability: 'view',
     type: 'function'
   },
   {
-    constant: true,
     inputs: [
       {
+        internalType: 'address',
+        name: 'personAddress',
+        type: 'address'
+      },
+      {
+        internalType: 'bytes32',
+        name: 'HID',
+        type: 'bytes32'
+      },
+      {
+        internalType: 'string',
         name: 'IPFShash',
         type: 'string'
       },
       {
+        internalType: 'bytes32',
         name: 'hashOfEncCovDigRec',
         type: 'bytes32'
       },
       {
+        internalType: 'bytes32',
+        name: 'covidTnVStatus',
+        type: 'bytes32'
+      },
+      {
+        internalType: 'string',
+        name: 'signature',
+        type: 'string'
+      }
+    ],
+    name: 'personOnboarding',
+    outputs: [
+      {
+        internalType: 'bool',
+        name: 'result',
+        type: 'bool'
+      }
+    ],
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
+  {
+    inputs: [
+      {
+        internalType: 'string',
+        name: 'AHF_name',
+        type: 'string'
+      },
+      {
+        internalType: 'address',
+        name: 'AHF_address',
+        type: 'address'
+      }
+    ],
+    name: 'registerHealthFacility',
+    outputs: [
+      {
+        internalType: 'bool',
+        name: '',
+        type: 'bool'
+      }
+    ],
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
+  {
+    inputs: [
+      {
+        internalType: 'bytes32',
+        name: 'HID',
+        type: 'bytes32'
+      },
+      {
+        internalType: 'string',
+        name: 'IPFShash_new',
+        type: 'string'
+      },
+      {
+        internalType: 'bytes32',
+        name: 'hashOfEncCovDigRec_new',
+        type: 'bytes32'
+      },
+      {
+        internalType: 'bytes32',
+        name: 'covidTnVStatus',
+        type: 'bytes32'
+      },
+      {
+        internalType: 'string',
+        name: 'signature_new',
+        type: 'string'
+      }
+    ],
+    name: 'updatePersonTestStatus',
+    outputs: [
+      {
+        internalType: 'bool',
+        name: 'result',
+        type: 'bool'
+      }
+    ],
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
+  {
+    inputs: [
+      {
+        internalType: 'string',
+        name: 'IPFShash',
+        type: 'string'
+      },
+      {
+        internalType: 'bytes32',
+        name: 'hashOfEncCovDigRec',
+        type: 'bytes32'
+      },
+      {
+        internalType: 'bytes32',
+        name: 'covidTnVStatus',
+        type: 'bytes32'
+      },
+      {
+        internalType: 'string',
         name: 'signature',
         type: 'string'
       }
@@ -211,15 +220,11 @@ var ABI = [
     name: 'verifyPersonStatus',
     outputs: [
       {
+        internalType: 'bool',
         name: '',
-        type: 'string'
-      },
-      {
-        name: '',
-        type: 'string'
+        type: 'bool'
       }
     ],
-    payable: false,
     stateMutability: 'view',
     type: 'function'
   }
