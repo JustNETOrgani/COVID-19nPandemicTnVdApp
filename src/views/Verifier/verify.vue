@@ -74,6 +74,26 @@
           <div id="qrCodeScanning" width="500px"></div>
           <el-button type="primary" @click="qrCodeDivDisappear()">Done</el-button>
         </div>
+        <el-dialog title="Proof type" :visible.sync="proofTypeDialogFormVisible">
+          <el-form :model="proofTypeForm" :rules="rules" ref="proofTypeForm">
+            <el-form-item label="Test status" :label-width="proofTypeFormLabelWidth">
+              <el-select v-model="proofTypeForm.tStatus" placeholder="Select test status">
+                  <el-option label="Positive" value="Positive"></el-option>
+                  <el-option label="Negative" value="Negative"></el-option>
+              </el-select>
+            </el-form-item>
+            <el-form-item label="Test status" :label-width="proofTypeFormLabelWidth">
+              <el-select v-model="proofTypeForm.vStatus" placeholder="Select vaccination status">
+                <el-option label="Not vaccinated" value="Not Vaccinated"></el-option>
+                <el-option label="Vaccinated" value="vaccinated"></el-option>
+              </el-select>
+            </el-form-item>
+          </el-form>
+          <span slot="footer" class="dialog-footer">
+            <el-button @click="proofTypeDialogFormVisible = false">Cancel</el-button>
+            <el-button type="primary" @click="getUserProofType('proofTypeForm')">Confirm</el-button>
+          </span>
+        </el-dialog>
     </div>
 </template>
 
@@ -93,6 +113,10 @@ export default {
         ifpsHash: '',
         hashedID: ''
       },
+      proofTypeForm: {
+        tStatus: '',
+        vStatus: ''
+      },
       enteredIPFShash: '',
       hEcDR: '',
       sigOnIPFShash: '',
@@ -100,6 +124,9 @@ export default {
       currentAddress: '',
       VerifyResult: [],
       accountChangeStatus: false,
+      proofTypeFormLabelWidth: '100px',
+      setUserProofType: false,
+      merkleObject: [],
       // Loading states
       verifyBtnLoadState: false,
       scanPersonQRcodeLoadBtn: false,
@@ -108,10 +135,17 @@ export default {
       step: 1,
       // Dialog.
       dialogVisible: false,
+      proofTypeDialogFormVisible: false,
       rules: {
         ifpsHash: [
           { required: true, message: 'Please input IPFS hash of the paper', trigger: 'blur' },
           { min: 46, message: 'Length should be at least 46', trigger: 'blur' }
+        ],
+        tStatus: [
+          { required: true, message: 'Please select test status from the list.', trigger: 'blur' }
+        ],
+        vStatus: [
+          { required: true, message: 'Please select vaccination status from the list.', trigger: 'blur' }
         ]
       }
     }
@@ -123,6 +157,7 @@ export default {
       this.getAccount().then(accounts => {
         this.currentAddress = accounts[0]
         console.log('Current account: ', this.currentAddress)
+        this.proofTypeDialogFormVisible = true
       })
     }
   },
@@ -149,6 +184,25 @@ export default {
         myRoot.accountChangeStatus = true
       })
     },
+    getUserProofType (formName) {
+      this.$refs[formName].validate(valid => {
+        if (valid) {
+          this.merkleObject.push(this.proofTypeForm.tStatus, this.proofTypeForm.vStatus)
+          // User proof set.
+          this.setUserProofType = true
+          // Close the dialog.
+          this.proofTypeDialogFormVisible = false
+        } else {
+          console.log('Submission error.')
+          this.$message({
+            message: 'Please select from the dropdown list.',
+            type: 'warning'
+          })
+          this.setUserProofType = false
+          return false
+        }
+      })
+    },
     backToPrvPg () {
       this.$router.push('/')
     },
@@ -161,15 +215,20 @@ export default {
       // window.location.reload() // Reload page. This will close camera.
     },
     getPersonQRcode () {
-      console.log('QR code scanner initiated.')
-      this.scanPersonQRcodeLoadBtn = true
-      const config = {
-        fps: 10,
-        qrbox: 250
+      // Check that user has already set proof type.
+      if (this.setUserProofType === true) {
+        console.log('QR code scanner initiated.')
+        this.scanPersonQRcodeLoadBtn = true
+        const config = {
+          fps: 10,
+          qrbox: 250
+        }
+        const html5QrcodeScanner = new window.Html5QrcodeScanner('qrCodeScanning', config)
+        document.getElementById('overlay').style.display = 'block'
+        html5QrcodeScanner.render(this.onScanSuccess, this.onScanFailure)
+      } else {
+        this.proofTypeDialogFormVisible = true
       }
-      const html5QrcodeScanner = new window.Html5QrcodeScanner('qrCodeScanning', config)
-      document.getElementById('overlay').style.display = 'block'
-      html5QrcodeScanner.render(this.onScanSuccess, this.onScanFailure)
     },
     onScanSuccess (qrCodeMessage) {
       console.log('QR code scan result:', qrCodeMessage)
@@ -200,34 +259,40 @@ export default {
       console.log('QR scan error: ', error)
     },
     submitForm (formName) {
-      if (this.verificationForm.ifpsHash !== '') {
-        if (this.ipfsInputValidation(this.verificationForm.ifpsHash) !== 0) {
-          this.$refs[formName].validate(valid => {
-            this.verifyBtnLoadState = true
-            if (valid) {
+      // Check that user has already set proof type.
+      if (this.setUserProofType === true) {
+        if (this.verificationForm.ifpsHash !== '') {
+          if (this.ipfsInputValidation(this.verificationForm.ifpsHash) !== 0) {
+            this.$refs[formName].validate(valid => {
+              this.verifyBtnLoadState = true
+              if (valid) {
               // Perform verification
-              var data = {
-                ipfsHash: this.verificationForm.ifpsHash
+                var data = {
+                  ipfsHash: this.verificationForm.ifpsHash,
+                  hashedID: this.verificationForm.hashedID
+                }
+                console.log('Data: ', data)
+                this.performVerification(data.ipfsHash, data.hashedID)
+              } else {
+                console.log('Submission error.')
+                this.verifyBtnLoadState = false
+                return false
               }
-              console.log('Data: ', data)
-              this.performVerification(data.ipfsHash)
-            } else {
-              console.log('Submission error.')
-              this.verifyBtnLoadState = false
-              return false
-            }
-          })
+            })
+          } else {
+            this.$message({
+              message: 'Sorry! Invalid IPFS hash entered. Please, re-enter.',
+              type: 'warning'
+            })
+          }
         } else {
           this.$message({
-            message: 'Sorry! Invalid IPFS hash entered. Please, re-enter.',
+            message: 'Sorry! IPFS field cannot be empty.',
             type: 'warning'
           })
         }
       } else {
-        this.$message({
-          message: 'Sorry! IPFS field cannot be empty.',
-          type: 'warning'
-        })
+        this.proofTypeDialogFormVisible = true
       }
     },
     performVerification (ipfsHash, hashedID) {
@@ -250,7 +315,10 @@ export default {
         var keyToUse = Object.keys(this.VerifyResult)[currentStep]
         if (Object.keys(EcDRwithSig).length > 0 && 'timeStamp' in EcDRwithSig) {
           // Get header.
-
+          const timeStamp = EcDRwithSig.timeStamp
+          // const mkRoot = EcDRwithSig.mkRoot
+          // Construct merkle root.
+          this.merkleObject.push(timeStamp, hashedID) // All four needed acquired.
           // Data in IPFS pulled object.
           console.log('Encrypted data: ', EcDRwithSig)
           // Change status.
