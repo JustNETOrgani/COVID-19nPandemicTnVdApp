@@ -23,8 +23,8 @@
                             ref="onboardPerson"
                             label-width="145px"
                         >
-                            <el-form-item label="Center ID" prop="centerID">
-                                <el-input v-model="onboardPerson.centerID" placeholder="Please enter center ID."></el-input>
+                            <el-form-item label="Person ID" prop="userID">
+                                <el-input v-model="onboardPerson.userID" placeholder="Please enter user ID"></el-input>
                             </el-form-item>
                             <el-form-item label="Test status" prop="tStatus">
                                 <el-select
@@ -128,6 +128,8 @@ import { generateKeyPair, asymmEncrypt } from '@/assets/js/asymmEncrypt'
 import getHash from '@/assets/js/hashFunc'
 import web3 from '@/assets/js/web3Only'
 import { ABI, contractAddress, suppliedGas } from '@/assets/js/contractABI'
+import getMerkleRootFromMkTree from '@/assets/js/getMerkleRootOfData'
+import computeIPFShash from '@/assets/js/computeIPFShashBeforeStorage'
 // import convertIPFSstringToBytes from '@/assets/js/convertIPFShash.js'
 const ipfs = new window.Ipfs()
 const qrCode = new window.QRCodeStyling({
@@ -145,7 +147,7 @@ export default {
   data () {
     return {
       onboardPerson: {
-        centerID: '',
+        userID: '',
         tStatus: '',
         vStatus: '',
         authCheckBox: false
@@ -155,7 +157,9 @@ export default {
       // Dynamic variables.
       EcDR: '',
       hEcDR: '',
-      testTime: '',
+      HashedID: '',
+      timeStamp: '',
+      mkRoot: '',
       IPFSHashOfhEcDR: '',
       fullSignature: '',
       signature_substring: '',
@@ -165,6 +169,7 @@ export default {
       pubKeyOfPerson: '',
       AHPkeyGenerated: '',
       sigOfAHP: '',
+      merkeTreeData: [],
       // Loading states
       personOnboardLoadBtn: false,
       loadingPOnboardingPage: true,
@@ -256,26 +261,28 @@ export default {
             this.personOnboardLoadBtn = true
             if (valid) {
               var data = {
-                centerID: this.onboardPerson.centerID,
+                userID: this.onboardPerson.userID,
                 tStatus: this.onboardPerson.tStatus,
                 vStatus: this.onboardPerson.vStatus,
                 tTime: Math.round(+new Date() / 1000)// unix timestamp
               }
-              this.testTime = data.tTime
-              if (this.onboardPerson.vStatus === 'vaccinated') {
-                data.vTime = Math.round(+new Date() / 1000)// unix timestamp
-              } else {
-                data.vTime = ''
-              }
+              this.timeStamp = data.tTime
               console.log('Data: ', data)
+              // Prepare data for Merkle Tree.
+              this.merkeTreeData.push(data.tStatus, data.vStatus, this.timeStamp, data.userID)
               // Encrypt data using user public key ---> EcDR
               this.EcDR = asymmEncrypt(this.AHPkeyGenerated, data, this.pubKeyOfPerson)
               console.log('EcDR: ', this.EcDR)
               // Hash encrypted data---> hEcDR.
               getHash(this.EcDR).then(res => {
                 this.hEcDR = res
-                // AHP signs hEcDR to get signature. --->AHPsignature
-                this.signatureOfAHP() // Includes push to IPFS.
+                // Hash the UserID alone as input to the SC.
+                getHash(data.userID).then(HID => {
+                  this.HashedID = HID
+                  console.log('Hashed ID: ', this.HashedID)
+                  // AHP signs hEcDR to get signature. --->AHPsignature
+                  this.signatureOfAHP() // Includes push to IPFS.
+                })
               })
               // Person signs IPFShash to get signature.
               // Anchor data onto the blockchain via Smart Contract.
@@ -333,23 +340,58 @@ export default {
       })
     },
     pushToIPFShub () {
-      var encryptedDataToSendToJviaIPFS = JSON.stringify({ encryptedData: this.EcDR, signedByAHP: this.sigOfAHP, testTime: this.testTime })
-      // console.log('Connecting to IPFS.')
-      const MyBuffer = window.Ipfs.Buffer
-      var dataToBuffer = MyBuffer.from(encryptedDataToSendToJviaIPFS)
-      // console.log('Buffer conversion done.')
-      ipfs.add(dataToBuffer).then(res => {
-        console.log('Data upload to IPFS sucessful')
-        this.$message('File upload to IPFS successful.')
-        this.IPFSHashOfhEcDR = res[0].hash
-        this.active += 1 // Increment step by 1 to move to next step.
-        this.personOnboardLoadBtn = false
-        if (this.accountChangeStatus === false) {
-          this.accountSwitchDialogVisible = true
-          // Change state of processData button.
-          this.processDataBtnState = true
-        }
-      })
+      const merkleToutput = this.getMerkleRoot()
+      if (merkleToutput.aProof === true) {
+        this.mkRoot = merkleToutput.merkleRoot
+        var encryptedDataToSendToJviaIPFS = JSON.stringify({ timeStamp: this.timeStamp, mkRoot: this.mkRoot, sigOfAHP: this.sigOfAHP, encryptedData: this.EcDR })
+        // console.log('Connecting to IPFS.')
+        const MyBuffer = window.Ipfs.Buffer
+        var dataToBuffer = MyBuffer.from(encryptedDataToSendToJviaIPFS)
+        // console.log('Buffer conversion done.')
+        // Pre-compute IPFS hash before pushing to IPFS.
+        computeIPFShash(dataToBuffer).then(returnedIPFShash => {
+          ipfs.add(dataToBuffer).then(res => {
+          // Confirm returned IPFS matches precomputed hash.
+            if (returnedIPFShash === res[0].hash) {
+            // Match confirmed
+              this.IPFSHashOfhEcDR = res[0].hash
+              console.log('Data upload to IPFS sucessful')
+              this.$message('File upload to IPFS successful.')
+              this.active += 1 // Increment step by 1 to move to next step.
+              this.personOnboardLoadBtn = false
+              if (this.accountChangeStatus === false) {
+                this.accountSwitchDialogVisible = true
+                // Change state of processData button.
+                this.processDataBtnState = true
+              }
+            } else {
+              this.$message({
+                message: 'IPFS mismatch! Possible MiTM attack',
+                type: 'warning'
+              })
+              this.$alert('Possible MiTM attack! IPFS mismatch! ', 'IPFS hash mismatch', {
+                confirmButtonText: 'OK',
+                callback: action => {
+                  this.$message({
+                    type: 'warning ',
+                    message: 'User informed'
+                  })
+                }
+              })
+            }
+          })
+        })
+      } else {
+        this.$alert('Invalid proof generation of covid records. ', 'Invalid Proof', {
+          confirmButtonText: 'OK',
+          callback: action => {
+            this.$message({
+              type: 'warning ',
+              message: 'User informed'
+            })
+          }
+        })
+      }
     },
     getPersonSig () {
       if (this.getPersonSigBtnState === false) {
@@ -408,8 +450,9 @@ export default {
       console.log('Preparing QR code for: ', userIPFShash)
       console.log('Generating QR code containing IPFS hash of person.')
       // Update the QR code instance.
+      // Concatenate ipfs hash and hashed user ID.
       qrCode.update({
-        data: 'https://ipfs.io/ipfs/' + userIPFShash
+        data: userIPFShash + '' + this.HashedID
       })
       console.log('Appending QR code to DOM.')
       document.getElementById('overlay').style.display = 'block'
@@ -419,6 +462,10 @@ export default {
     },
     qrCodeDivDisappear () {
       document.getElementById('overlay').style.display = 'none'
+    },
+    getMerkleRoot () {
+      // This generates a root hash composed of tStatus, vStatus, timeStamp and userID.
+      return getMerkleRootFromMkTree(this.merkeTreeData)
     },
     anchorOnchain () {
       if (this.anchorOnBlockBtnState === false) {
@@ -430,7 +477,7 @@ export default {
           console.log('Contract instance created.')
           // Smart contract and other logic continues.
           try {
-            blockCovid.methods.personOnboarding(this.personAccount, this.IPFSHashOfhEcDR, this.hEcDR, this.onboardPerson.tStatus, this.onboardPerson.vStatus, this.fullSignature).send({
+            blockCovid.methods.personOnboarding(this.personAccount, this.HashedID, this.IPFSHashOfhEcDR, this.hEcDR, this.mkRoot, this.fullSignature).send({
               from: this.currentEthAddress,
               gas: 400000
             }).on('transactionHash', (hash) => {
