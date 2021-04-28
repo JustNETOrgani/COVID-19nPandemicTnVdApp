@@ -74,7 +74,7 @@
           <div id="qrCodeScanning" width="500px"></div>
           <el-button type="primary" @click="qrCodeDivDisappear()">Done</el-button>
         </div>
-        <el-dialog title="Proof type" :visible.sync="proofTypeDialogFormVisible">
+        <el-dialog title="Proof type" :visible.sync="proofTypeDialogFormVisible" width="35%">
           <el-form :model="proofTypeForm" :rules="rules" ref="proofTypeForm">
             <el-form-item label="Test status" :label-width="proofTypeFormLabelWidth">
               <el-select v-model="proofTypeForm.tStatus" placeholder="Select test status">
@@ -82,7 +82,7 @@
                   <el-option label="Negative" value="Negative"></el-option>
               </el-select>
             </el-form-item>
-            <el-form-item label="Test status" :label-width="proofTypeFormLabelWidth">
+            <el-form-item label="Vaccination status" :label-width="proofTypeFormLabelWidth">
               <el-select v-model="proofTypeForm.vStatus" placeholder="Select vaccination status">
                 <el-option label="Not vaccinated" value="Not Vaccinated"></el-option>
                 <el-option label="Vaccinated" value="vaccinated"></el-option>
@@ -101,6 +101,7 @@
 import ethEnabled from '@/assets/js/web3nMetaMask'
 import * as signatureGenerator from '@/assets/js/sigHelperFns'
 import getHash from '@/assets/js/hashFunc'
+import getMerkleRootFromMkTree from '@/assets/js/getMerkleRootOfData'
 import web3 from '@/assets/js/web3Only'
 import { ABI, contractAddress, suppliedGas } from '@/assets/js/contractABI'
 const ipfs = new window.Ipfs()
@@ -124,7 +125,7 @@ export default {
       currentAddress: '',
       VerifyResult: [],
       accountChangeStatus: false,
-      proofTypeFormLabelWidth: '100px',
+      proofTypeFormLabelWidth: '135px',
       setUserProofType: false,
       merkleObject: [],
       // Loading states
@@ -295,21 +296,26 @@ export default {
         this.proofTypeDialogFormVisible = true
       }
     },
+    getMerkleTree (data) {
+      // This generates a root hash composed of tStatus, vStatus, timeStamp and hashedUserID.
+      return getMerkleRootFromMkTree(data)
+    },
     performVerification (ipfsHash, hashedID) {
-      this.dialogVisible = true
-      // this.stepLoading = true
+      console.log('Verification initialized...')
+      this.enteredIPFShash = ipfsHash
       // Create array object for steps.
       this.VerifyResult = {
         1: { step: '1', name: 'Retrieving header', status: 'wait' },
         2: { step: '2', name: 'Getting encrypted data', status: 'wait' },
         3: { step: '3', name: 'Hashing encrypted data', status: 'wait' },
-        4: { step: '4', name: 'Acquiring Person signature', status: 'wait' },
+        4: { step: '4', name: 'Optional signature', status: 'wait' },
         5: { step: '5', name: 'Verifying in Smart Contract', status: 'wait' }
       }
-      this.enteredIPFShash = ipfsHash
+      this.dialogVisible = true
       // Steps ---> TODO
       // Acquire encrypted data on IPFS.
       ipfs.cat(this.enteredIPFShash).then(retrievedData => {
+        console.log('Data received from IPFS')
         var EcDRwithSig = JSON.parse(retrievedData.toString()) // Convert to string and parse as JSON object.
         var currentStep = 0
         var keyToUse = Object.keys(this.VerifyResult)[currentStep]
@@ -319,101 +325,86 @@ export default {
           // const mkRoot = EcDRwithSig.mkRoot
           // Construct merkle root.
           this.merkleObject.push(timeStamp, hashedID) // All four needed acquired.
-          // Data in IPFS pulled object.
-          console.log('Encrypted data: ', EcDRwithSig)
-          // Change status.
-          this.VerifyResult[keyToUse].status = 'success'
-          // Hash the EcDR.
-          getHash(EcDRwithSig.encryptedData).then(res => {
-            this.hEcDR = res
+          // Generate Merkle tree.
+          const merkleToutput = this.getMerkleTree(this.merkleObject)
+          if (merkleToutput.aProof === true) {
+            const merkleRoot = merkleToutput.merkleRoot
+            // Increment step.
+            this.VerifyResult[keyToUse].status = 'success'
             currentStep += 1
             keyToUse = Object.keys(this.VerifyResult)[currentStep]
-            if (this.hEcDR.length > 0) {
+            // Data body in IPFS pulled object.
+            console.log('Encrypted data: ', EcDRwithSig)
+            // Change status.
+            this.VerifyResult[keyToUse].status = 'success'
+            // Hash the EcDR.
+            getHash(EcDRwithSig.encryptedData).then(res => {
+              this.hEcDR = res
+              currentStep += 1
+              keyToUse = Object.keys(this.VerifyResult)[currentStep]
+              if (this.hEcDR.length > 0) {
               // Hashing was successful.
               // Change status.
-              this.VerifyResult[keyToUse].status = 'success'
-              // Allow user to sign IPFS hash.
-              signatureGenerator.signatureGen(ipfsHash, this.currentAddress, (sig) => {
-                this.fullSignature = sig
-                currentStep += 1
-                keyToUse = Object.keys(this.VerifyResult)[currentStep]
-                if (this.fullSignature.length > 0) {
-                  this.sigOnIPFShash = (sig.substring(0, 25) + '...' + sig.substr(sig.length - 25)).replace(/"/g, '') // Remove the double quotes.
-                  console.log('Person sig.: ', this.fullSignature)
-                  // Change status.
-                  this.VerifyResult[keyToUse].status = 'success'
-                  // Verify on-chain
-                  var blockCovid = new web3.eth.Contract(ABI, contractAddress, { defaultGas: suppliedGas })// End of ABi Code from Remix.
-                  console.log('Contract instance created.')
-                  currentStep += 1
-                  keyToUse = Object.keys(this.VerifyResult)[currentStep]
-                  // Smart contract and other logic continues.
-                  // This is call operation. Any account can be used. It cost zero Eth.
-                  blockCovid.methods.verifyPersonStatus(ipfsHash, this.hEcDR, this.fullSignature).call({ from: this.currentAddress }).then(res => {
-                    // console.log('Response from Contract: ', res)
-                    var getFirstIndex = Object.keys(res)[0]
-                    var accessedFirstRetData = res[getFirstIndex]
-                    if (accessedFirstRetData === 'Sorry!') {
-                      // Person failed proof verification.
+                this.VerifyResult[keyToUse].status = 'success'
+                // Optional signing.
+                this.$confirm('Would you like to sign?', 'Optional Information', {
+                  confirmButtonText: 'Yes',
+                  cancelButtonText: 'No',
+                  type: 'info'
+                }).then(() => {
+                  this.$message({
+                    type: 'success',
+                    message: 'Getting Person signature'
+                  })
+                  // Allow user to sign IPFS hash if need.
+                  signatureGenerator.signatureGen(ipfsHash, this.currentAddress, (sig) => {
+                    this.fullSignature = sig
+                    currentStep += 1
+                    keyToUse = Object.keys(this.VerifyResult)[currentStep]
+                    if (this.fullSignature.length > 0) {
+                      this.sigOnIPFShash = (sig.substring(0, 25) + '...' + sig.substr(sig.length - 25)).replace(/"/g, '') // Remove the double quotes.
+                      console.log('Person sig.: ', this.fullSignature)
                       // Change status.
-                      this.VerifyResult[keyToUse].status = 'error'
-                      this.$notify.error({
-                        title: 'Failed proof',
-                        message: 'Sorry! You failed blockchain verification.'
-                      })
-                      this.getUserChoice()
-                    } else {
-                      // Person passed. Display status.
                       this.VerifyResult[keyToUse].status = 'success'
-                      this.$notify({
-                        title: 'Successful proof',
-                        message: 'You passed blockchain proof',
-                        type: 'success'
-                      })
-                      var getSecondIndex = Object.keys(res)[1]
-                      var accessedSecondRetData = res[getSecondIndex]
-                      this.$alert('Test result : ' + accessedFirstRetData + '.  ' + ' Vaccination Status : ' + accessedSecondRetData + '.  ' + 'Date/Time : ' + this.convertUnixTimestamp(EcDRwithSig.testTime) + '.', 'Proof success', {
-                        confirmButtonText: 'OK',
-                        callback: action => {
-                          this.$message({
-                            type: 'info',
-                            message: 'Successful data retrieval'
-                          })
-                          this.getUserChoice()
-                        }
-                      })
+                      // Continue verification on-chain.
+                      this.continueVerificationOnchain(currentStep, ipfsHash, merkleRoot)
                     }
                   }).catch(err => {
-                    console.log('Error occurred during blockchain verification', err)
-                    this.VerifyResult[keyToUse].status = 'error'
-                    this.$notify.error({
-                      title: 'Failed proof',
-                      message: 'Sorry! You failed blockchain checks.'
-                    })
+                    console.log('Signature error: ', err)
+                    this.$message.error('Oops, Error generating signature.')
                     this.verifyBtnLoadState = false
-                    this.getUserChoice()
                   })
-                } else {
-                  this.VerifyResult[keyToUse].status = 'error'
-                  console.log('Signature length error')
-                  this.$message.error('Oops, Error generating signature.')
-                  this.verifyBtnLoadState = false
-                }
-              }).catch(err => {
-                console.log('Signature error: ', err)
-                this.$message.error('Oops, Error generating signature.')
+                }).catch(() => {
+                  this.$message({
+                    type: 'info',
+                    message: 'Signature request canceled'
+                  })
+                  // Change status.
+                  this.VerifyResult[keyToUse].status = 'success'
+                  // Continue verification on-chain.
+                  this.continueVerificationOnchain(currentStep, ipfsHash, merkleRoot)
+                })
+              } else {
+                this.VerifyResult[keyToUse].status = 'error'
                 this.verifyBtnLoadState = false
-              })
-            } else {
-              this.VerifyResult[keyToUse].status = 'error'
+                this.$message.error('Hash length error.')
+              }
+            }).catch(err => {
+              console.log('Hashing error: ', err)
+              this.$message.error('Oops, Error hashing data.')
               this.verifyBtnLoadState = false
-              this.$message.error('Hash length error.')
-            }
-          }).catch(err => {
-            console.log('Hashing error: ', err)
-            this.$message.error('Oops, Error hashing data.')
-            this.verifyBtnLoadState = false
-          })
+            })
+          } else {
+            this.$alert('Invalid proof generation of covid records. ', 'Invalid Proof', {
+              confirmButtonText: 'OK',
+              callback: action => {
+                this.$message({
+                  type: 'warning ',
+                  message: 'User informed'
+                })
+              }
+            })
+          }
         } else {
           this.VerifyResult[keyToUse].status = 'error'
           this.verifyBtnLoadState = false
@@ -424,6 +415,56 @@ export default {
         console.log('IPFS error: ', err)
         this.$message.error('Oops, Error pulling data from IPFS.')
         this.verifyBtnLoadState = false
+      })
+    },
+    continueVerificationOnchain (currentStep, ipfsHash, merkeRoot) {
+      // Verify on-chain
+      var blockCovid = new web3.eth.Contract(ABI, contractAddress, { defaultGas: suppliedGas })// End of ABi Code from Remix.
+      console.log('Contract instance created.')
+      currentStep += 1
+      var keyToUse = Object.keys(this.VerifyResult)[currentStep]
+      // Smart contract and other logic continues.
+      // This is call operation. Any account can be used. It cost zero Eth.
+      blockCovid.methods.verifyPersonStatus(ipfsHash, this.hEcDR, merkeRoot, this.fullSignature).call({ from: this.currentAddress }).then(res => {
+        // console.log('Response from Contract: ', res)
+        var verificationResult = res
+        if (verificationResult === true) {
+          // Person passed. Display status.
+          this.VerifyResult[keyToUse].status = 'success'
+          this.$notify({
+            title: 'Successful proof',
+            message: 'You passed blockchain proof',
+            type: 'success'
+          })
+          this.$alert('Test result : ' + this.merkleObject[0] + '.  ' + ' Vaccination Status : ' + this.merkleObject[1] + '.  ' + 'Date/Time : ' + this.convertUnixTimestamp(this.merkleObject[2]) + '.', 'Proof success', {
+            confirmButtonText: 'OK',
+            callback: action => {
+              this.$message({
+                type: 'info',
+                message: 'Successful data retrieval'
+              })
+              this.getUserChoice()
+            }
+          })
+        } else {
+          // Person failed proof verification.
+          // Change status.
+          this.VerifyResult[keyToUse].status = 'error'
+          this.$notify.error({
+            title: 'Failed proof',
+            message: 'Sorry! You failed blockchain verification.'
+          })
+          this.getUserChoice()
+        }
+      }).catch(err => {
+        console.log('Error occurred during blockchain verification', err)
+        this.VerifyResult[keyToUse].status = 'error'
+        this.$notify.error({
+          title: 'Failed proof',
+          message: 'Sorry! You failed blockchain checks.'
+        })
+        this.verifyBtnLoadState = false
+        this.getUserChoice()
       })
     },
     ipfsInputValidation (input) {
