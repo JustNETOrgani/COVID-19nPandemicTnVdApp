@@ -343,7 +343,7 @@ export default {
       const merkleToutput = this.getMerkleRoot()
       if (merkleToutput.aProof === true) {
         this.mkRoot = merkleToutput.merkleRoot
-        var encryptedDataToSendToJviaIPFS = JSON.stringify({ timeStamp: this.timeStamp, mkRoot: this.mkRoot, sigOfAHP: this.sigOfAHP, encryptedData: this.EcDR })
+        var encryptedDataToSendToJviaIPFS = JSON.stringify({ timeStamp: this.timeStamp, sigOfAHP: this.sigOfAHP, encryptedData: this.EcDR })
         // console.log('Connecting to IPFS.')
         const MyBuffer = window.Ipfs.Buffer
         var dataToBuffer = MyBuffer.from(encryptedDataToSendToJviaIPFS)
