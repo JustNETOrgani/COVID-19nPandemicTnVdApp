@@ -45,49 +45,6 @@ var ABI = [
     type: 'event'
   },
   {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
-        internalType: 'address',
-        name: 'txInitiator',
-        type: 'address'
-      },
-      {
-        indexed: false,
-        internalType: 'string',
-        name: 'ipfsHash',
-        type: 'string'
-      }
-    ],
-    name: 'personUpdated',
-    type: 'event'
-  },
-  {
-    inputs: [
-      {
-        internalType: 'address',
-        name: '',
-        type: 'address'
-      }
-    ],
-    name: 'approvedHC',
-    outputs: [
-      {
-        internalType: 'string',
-        name: 'AHF_name',
-        type: 'string'
-      },
-      {
-        internalType: 'address',
-        name: 'AHF_address',
-        type: 'address'
-      }
-    ],
-    stateMutability: 'view',
-    type: 'function'
-  },
-  {
     inputs: [
       {
         internalType: 'address',
@@ -130,6 +87,25 @@ var ABI = [
     ],
     stateMutability: 'nonpayable',
     type: 'function'
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: 'address',
+        name: 'txInitiator',
+        type: 'address'
+      },
+      {
+        indexed: false,
+        internalType: 'string',
+        name: 'ipfsHash',
+        type: 'string'
+      }
+    ],
+    name: 'personUpdated',
+    type: 'event'
   },
   {
     inputs: [
@@ -197,6 +173,30 @@ var ABI = [
   {
     inputs: [
       {
+        internalType: 'address',
+        name: '',
+        type: 'address'
+      }
+    ],
+    name: 'approvedHC',
+    outputs: [
+      {
+        internalType: 'string',
+        name: 'AHF_name',
+        type: 'string'
+      },
+      {
+        internalType: 'address',
+        name: 'AHF_address',
+        type: 'address'
+      }
+    ],
+    stateMutability: 'view',
+    type: 'function'
+  },
+  {
+    inputs: [
+      {
         internalType: 'string',
         name: 'IPFShash',
         type: 'string'
@@ -230,7 +230,7 @@ var ABI = [
   }
 ]
 
-var contractAddress = '0x3A04805998CDE6f2A8075BEa45744857909e49b5'
+var contractAddress = '0x680f748e115dD55D348D6edD2Fb33b1E3E64D08b'
 
 var suppliedGas = 3000000
 
