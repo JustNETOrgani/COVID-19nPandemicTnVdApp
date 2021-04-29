@@ -55,7 +55,7 @@
         <el-dialog
             title="Covid-19 test/vaccination status verification"
             :visible.sync="dialogVisible" width="40%">
-            <span id="IPFShashNotice">Verifying using IPFS hash: {{enteredIPFShash}}</span>
+            <span id="IPFShashNotice">Verifying via: {{enteredIPFShash}}</span>
             <br />
             <span id="BlockchainInUse">Blockchain in use: Ethereum</span>
             <el-steps v-loading="stepLoading" direction="vertical" :active="step">
@@ -300,102 +300,135 @@ export default {
       // This generates a root hash composed of tStatus, vStatus, timeStamp and hashedUserID.
       return getMerkleRootFromMkTree(data)
     },
+    verifyTimestampValidity (timeStamp) {
+      // Check that the timestamp is within 72 hours (3 days).
+      const currentTimestamp = (Math.round(+new Date() / 1000)) * 1000// unix timestamp and convert to milliseconds.
+      const tDiff = currentTimestamp - (timeStamp * 1000)
+      const hoursElapsed = Math.floor(tDiff / 1000 / 60 / 60)
+      return hoursElapsed
+    },
     performVerification (ipfsHash, hashedID) {
       console.log('Verification initialized...')
       this.enteredIPFShash = ipfsHash
       // Create array object for steps.
       this.VerifyResult = {
         1: { step: '1', name: 'Retrieving header', status: 'wait' },
-        2: { step: '2', name: 'Getting encrypted data', status: 'wait' },
-        3: { step: '3', name: 'Hashing encrypted data', status: 'wait' },
-        4: { step: '4', name: 'Optional signature', status: 'wait' },
-        5: { step: '5', name: 'Verifying in Smart Contract', status: 'wait' }
+        2: { step: '2', name: 'Timestamp check', status: 'wait' },
+        3: { step: '3', name: 'Getting encrypted data', status: 'wait' },
+        4: { step: '4', name: 'Hashing encrypted data', status: 'wait' },
+        5: { step: '5', name: 'Optional signature request', status: 'wait' },
+        6: { step: '6', name: 'Verifying in Smart Contract', status: 'wait' }
       }
       this.dialogVisible = true
       // Steps ---> TODO
+      var currentStep = 0
+      var keyToUse = Object.keys(this.VerifyResult)[currentStep]
       // Acquire encrypted data on IPFS.
       ipfs.cat(this.enteredIPFShash).then(retrievedData => {
         console.log('Data received from IPFS')
         var EcDRwithSig = JSON.parse(retrievedData.toString()) // Convert to string and parse as JSON object.
-        var currentStep = 0
-        var keyToUse = Object.keys(this.VerifyResult)[currentStep]
         if (Object.keys(EcDRwithSig).length > 0 && 'timeStamp' in EcDRwithSig) {
           // Get header.
+          this.VerifyResult[keyToUse].status = 'success'
+          // Check timestamp.
           const timeStamp = EcDRwithSig.timeStamp
-          // const mkRoot = EcDRwithSig.mkRoot
-          // Construct merkle root.
-          this.merkleObject.push(timeStamp, hashedID) // All four needed acquired.
-          // Generate Merkle tree.
-          const merkleToutput = this.getMerkleTree(this.merkleObject)
-          if (merkleToutput.aProof === true) {
-            const merkleRoot = merkleToutput.merkleRoot
+          // const testLatetimeStamp = 1619218659
+          // const convertedTimeStamp = this.convertUnixTimestamp(timeStamp)
+          const daysElapsed = this.verifyTimestampValidity(timeStamp)
+          if (daysElapsed <= 72) {
+            // Timestamp is within last 72 hours.
             // Increment step.
-            this.VerifyResult[keyToUse].status = 'success'
             currentStep += 1
             keyToUse = Object.keys(this.VerifyResult)[currentStep]
-            // Data body in IPFS pulled object.
-            console.log('Encrypted data: ', EcDRwithSig)
-            // Change status.
             this.VerifyResult[keyToUse].status = 'success'
-            // Hash the EcDR.
-            getHash(EcDRwithSig.encryptedData).then(res => {
-              this.hEcDR = res
+            // Construct merkle root.
+            this.merkleObject.push(timeStamp, hashedID) // All four needed acquired.
+            // Generate Merkle tree.
+            const merkleToutput = this.getMerkleTree(this.merkleObject)
+            if (merkleToutput.aProof === true) {
+              const merkleRoot = merkleToutput.merkleRoot
+              // Increment step.
+              this.VerifyResult[keyToUse].status = 'success'
               currentStep += 1
               keyToUse = Object.keys(this.VerifyResult)[currentStep]
-              if (this.hEcDR.length > 0) {
-              // Hashing was successful.
+              // Data body in IPFS pulled object.
+              console.log('Encrypted data: ', EcDRwithSig)
               // Change status.
-                this.VerifyResult[keyToUse].status = 'success'
-                // Optional signing.
-                this.$confirm('Would you like to sign?', 'Optional Information', {
-                  confirmButtonText: 'Yes',
-                  cancelButtonText: 'No',
-                  type: 'info'
-                }).then(() => {
-                  this.$message({
-                    type: 'success',
-                    message: 'Getting Person signature'
-                  })
-                  // Allow user to sign IPFS hash if need.
-                  signatureGenerator.signatureGen(ipfsHash, this.currentAddress, (sig) => {
-                    this.fullSignature = sig
-                    currentStep += 1
-                    keyToUse = Object.keys(this.VerifyResult)[currentStep]
-                    if (this.fullSignature.length > 0) {
-                      this.sigOnIPFShash = (sig.substring(0, 25) + '...' + sig.substr(sig.length - 25)).replace(/"/g, '') // Remove the double quotes.
-                      console.log('Person sig.: ', this.fullSignature)
-                      // Change status.
-                      this.VerifyResult[keyToUse].status = 'success'
-                      // Continue verification on-chain.
-                      this.continueVerificationOnchain(currentStep, ipfsHash, merkleRoot)
-                    }
-                  }).catch(err => {
-                    console.log('Signature error: ', err)
-                    this.$message.error('Oops, Error generating signature.')
-                    this.verifyBtnLoadState = false
-                  })
-                }).catch(() => {
-                  this.$message({
-                    type: 'info',
-                    message: 'Signature request canceled'
-                  })
+              this.VerifyResult[keyToUse].status = 'success'
+              // Hash the EcDR.
+              getHash(EcDRwithSig.encryptedData).then(res => {
+                this.hEcDR = res
+                currentStep += 1
+                keyToUse = Object.keys(this.VerifyResult)[currentStep]
+                if (this.hEcDR.length > 0) {
+                  // Hashing was successful.
                   // Change status.
                   this.VerifyResult[keyToUse].status = 'success'
-                  // Continue verification on-chain.
-                  this.continueVerificationOnchain(currentStep, ipfsHash, merkleRoot)
-                })
-              } else {
-                this.VerifyResult[keyToUse].status = 'error'
+                  // Optional signing.
+                  this.$confirm('Would you like to sign?', 'Optional Information', {
+                    confirmButtonText: 'Yes',
+                    cancelButtonText: 'No',
+                    type: 'info'
+                  }).then(() => {
+                    this.$message({
+                      type: 'success',
+                      message: 'Getting Person signature'
+                    })
+                    // Allow user to sign IPFS hash if need.
+                    signatureGenerator.signatureGen(ipfsHash, this.currentAddress, (sig) => {
+                      this.fullSignature = sig
+                      currentStep += 1
+                      keyToUse = Object.keys(this.VerifyResult)[currentStep]
+                      if (this.fullSignature.length > 0) {
+                        this.sigOnIPFShash = (sig.substring(0, 25) + '...' + sig.substr(sig.length - 25)).replace(/"/g, '') // Remove the double quotes.
+                        console.log('Person sig.: ', this.fullSignature)
+                        // Change status.
+                        this.VerifyResult[keyToUse].status = 'success'
+                        // Continue verification on-chain.
+                        this.continueVerificationOnchain(currentStep, ipfsHash, merkleRoot)
+                      }
+                    }).catch(err => {
+                      console.log('Signature error: ', err)
+                      this.$message.error('Oops, Error generating signature.')
+                      this.verifyBtnLoadState = false
+                    })
+                  }).catch(() => {
+                    this.$message({
+                      type: 'info',
+                      message: 'Signature request canceled'
+                    })
+                    // Change status.
+                    this.VerifyResult[keyToUse].status = 'success'
+                    currentStep += 1
+                    // Continue verification on-chain.
+                    this.continueVerificationOnchain(currentStep, ipfsHash, merkleRoot)
+                  })
+                } else {
+                  this.VerifyResult[keyToUse].status = 'error'
+                  this.verifyBtnLoadState = false
+                  this.$message.error('Hash length error.')
+                }
+              }).catch(err => {
+                console.log('Hashing error: ', err)
+                this.$message.error('Oops, Error hashing data.')
                 this.verifyBtnLoadState = false
-                this.$message.error('Hash length error.')
-              }
-            }).catch(err => {
-              console.log('Hashing error: ', err)
-              this.$message.error('Oops, Error hashing data.')
-              this.verifyBtnLoadState = false
-            })
+              })
+            } else {
+              this.$alert('Invalid proof generation of covid records. ', 'Invalid Proof', {
+                confirmButtonText: 'OK',
+                callback: action => {
+                  this.$message({
+                    type: 'warning ',
+                    message: 'User informed'
+                  })
+                }
+              })
+            }
           } else {
-            this.$alert('Invalid proof generation of covid records. ', 'Invalid Proof', {
+            currentStep += 1
+            keyToUse = Object.keys(this.VerifyResult)[currentStep]
+            this.VerifyResult[keyToUse].status = 'error'
+            this.$alert('Time above 72 hrs threshold. ', 'Timestamp alert', {
               confirmButtonText: 'OK',
               callback: action => {
                 this.$message({
@@ -436,14 +469,14 @@ export default {
             message: 'You passed blockchain proof',
             type: 'success'
           })
-          this.$alert('Test result : ' + this.merkleObject[0] + '.  ' + ' Vaccination Status : ' + this.merkleObject[1] + '.  ' + 'Date/Time : ' + this.convertUnixTimestamp(this.merkleObject[2]) + '.', 'Proof success', {
+          this.$alert('Test result : ' + this.merkleObject[0] + '.  ' + ' Vaccination Status : ' + this.merkleObject[1] + '.', 'Proof success', {
             confirmButtonText: 'OK',
             callback: action => {
               this.$message({
                 type: 'info',
                 message: 'Successful data retrieval'
               })
-              this.getUserChoice()
+              // this.getUserChoice()
             }
           })
         } else {
@@ -496,7 +529,6 @@ export default {
     },
     convertUnixTimestamp (unixTimestamp) {
       // Convert UNIX Time to Date/Time
-      console.log('Unix time: ', unixTimestamp)
       var monthsArr = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
       var date = new Date(unixTimestamp * 1000)
       var year = date.getFullYear()
