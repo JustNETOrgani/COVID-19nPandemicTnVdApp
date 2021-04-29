@@ -2,7 +2,7 @@
   <div class="header">
     <img class="logo" src="../assets/imgs/blockCovidImg.png" />
     <div class="menu">
-      <p id="appHeadingOne">BlockCovid-19: A Privacy-preserving test result and vaccination provenance based on Blockchain and Smart Contract</p>
+      <p id="appHeadingOne">BlockCovid-19: A Privacy-preserving test result and vaccination provenance framework based on Blockchain and Smart Contract</p>
     </div>
   </div>
 </template>
