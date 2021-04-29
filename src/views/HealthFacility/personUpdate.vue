@@ -18,17 +18,17 @@
                 <el-col :span="9">
                     <div class="grid-content bg-purple-dark">
                         <el-form
-                            :model="onboardPerson"
+                            :model="updatePerson"
                             :rules="rules"
-                            ref="onboardPerson"
+                            ref="updatePerson"
                             label-width="145px"
                         >
-                            <el-form-item label="Center ID" prop="centerID">
-                                <el-input v-model="onboardPerson.centerID" placeholder="Please enter center ID."></el-input>
+                            <el-form-item label="Person ID" prop="userID">
+                                <el-input v-model="updatePerson.userID" placeholder="Please enter user ID"></el-input>
                             </el-form-item>
                             <el-form-item label="New test status" prop="tStatus">
                                 <el-select
-                                    v-model="onboardPerson.tStatus"
+                                    v-model="updatePerson.tStatus"
                                     style="width:100%"
                                     placeholder="Select test status">
                                     <el-option label="Positive" value="Positive"></el-option>
@@ -37,7 +37,7 @@
                             </el-form-item>
                             <el-form-item label="New Vacc. status" prop="vStatus">
                                 <el-select
-                                    v-model="onboardPerson.vStatus"
+                                    v-model="updatePerson.vStatus"
                                     style="width:100%"
                                     placeholder="Select vaccination status">
                                     <el-option label="Not vaccinated" value="Not Vaccinated"></el-option>
@@ -46,12 +46,12 @@
                             </el-form-item>
                             <el-row>
                               <el-form-item label="**AHP's consent**" prop="authCheckBox">
-                                  <el-checkbox v-model="onboardPerson.authCheckBox">I understand the implication of this action.</el-checkbox>
+                                  <el-checkbox v-model="updatePerson.authCheckBox">I understand the implication of this action.</el-checkbox>
                               </el-form-item>
                             </el-row>
                             <el-row>
-                                <el-button :disabled='isDisabled' :loading="personOnboardLoadBtn" @click="processFormData('onboardPerson')">Process data</el-button>
-                                <el-button @click="resetForm('onboardPerson')">Reset</el-button>
+                                <el-button :disabled='isDisabled' :loading="personOnboardLoadBtn" @click="processFormData('updatePerson')">Process data</el-button>
+                                <el-button @click="resetForm('updatePerson')">Reset</el-button>
                             </el-row>
                         </el-form>
                     </div>
@@ -144,8 +144,8 @@ const qrCode = new window.QRCodeStyling({
 export default {
   data () {
     return {
-      onboardPerson: {
-        centerID: '',
+      updatePerson: {
+        userID: '',
         tStatus: '',
         vStatus: '',
         authCheckBox: false
@@ -181,7 +181,7 @@ export default {
       getPersonSigBtnState: false,
       anchorOnBlockBtnState: false,
       rules: {
-        centerID: [
+        userID: [
           { required: true, message: 'Please input center ID', trigger: 'blur' },
           { min: 5, message: 'Length should be at least 5', trigger: 'blur' }
         ],
@@ -251,23 +251,21 @@ export default {
     },
     processFormData (formName) {
       if (this.processDataBtnState === false) {
-        if (this.onboardPerson.authCheckBox === true) {
+        if (this.updatePerson.authCheckBox === true) {
           this.$refs[formName].validate(valid => {
             this.personOnboardLoadBtn = true
             if (valid) {
               var data = {
-                centerID: this.onboardPerson.centerID,
-                tStatus: this.onboardPerson.tStatus,
-                vStatus: this.onboardPerson.vStatus,
+                centerID: this.updatePerson.userID,
+                tStatus: this.updatePerson.tStatus,
+                vStatus: this.updatePerson.vStatus,
                 tTime: Math.round(+new Date() / 1000)// unix timestamp
               }
               this.testTime = data.tTime
-              if (this.onboardPerson.vStatus === 'vaccinated') {
-                data.vTime = Math.round(+new Date() / 1000)// unix timestamp
-              } else {
-                data.vTime = ''
-              }
               console.log('Data: ', data)
+              // Access previous records from IPFS.
+              // Decrypt it.
+              // Update it.
               // Encrypt data using user public key ---> EcDR
               this.EcDR = asymmEncrypt(this.AHPkeyGenerated, data, this.pubKeyOfPerson)
               console.log('EcDR: ', this.EcDR)
