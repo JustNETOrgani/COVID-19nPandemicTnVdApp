@@ -43,14 +43,19 @@ contract coronaVirusTnV {
         require(msg.sender == contractDeployer);
         _;
     }
-    // Creating access modifier for AHFs
-    modifier AHFsOnly(address hAddress, address[] memory addressesArray) {
+
+    // Function to run checks on membership of approved health facilities.
+    function verifyInclusiveness(
+        address hAddress,
+        address[] memory addressesArray
+    ) internal pure returns (uint8) {
         for (uint256 i = 0; i < addressesArray.length; i++) {
             // AHFs within a jurisdiction are finite so still ok.
             if (addressesArray[i] == hAddress) {
-                _;
+                return 1;
             }
         }
+        return 0;
     }
 
     //Public Function to register an approved health facility.
@@ -74,11 +79,12 @@ contract coronaVirusTnV {
         bytes32 hashOfEncCovDigRec,
         bytes32 covidTnVStatus,
         string memory signature
-    )
-        public
-        AHFsOnly(msg.sender, approvedHealthFacilities)
-        returns (bool result)
-    {
+    ) public returns (bool result) {
+        // AA checks.
+        require(
+            verifyInclusiveness(msg.sender, approvedHealthFacilities) == 1,
+            "Access denied"
+        ); // Check msg.sender is part of approvedHealthFacilities.
         person[HID].personAddress = personAddress;
         person[HID].HID = HID;
         person[HID].hashOfEncCovDigRec = hashOfEncCovDigRec;
@@ -99,11 +105,13 @@ contract coronaVirusTnV {
         bytes32 hashOfEncCovDigRec_new,
         bytes32 covidTnVStatus,
         string memory signature_new
-    )
-        public
-        AHFsOnly(msg.sender, approvedHealthFacilities)
-        returns (bool result)
-    {
+    ) public returns (bool result) {
+        // AA checks.
+        require(
+            verifyInclusiveness(msg.sender, approvedHealthFacilities) == 1,
+            "Access denied"
+        ); // Check msg.sender is part of approvedHealthFacilities.
+        // Update person records
         require(person[HID].HID != "", "Person unknown");
         // Update person records
         person[HID].IPFShash = IPFShash_new;
@@ -144,7 +152,7 @@ contract coronaVirusTnV {
             );
             return true;
         } else {
-            // Person is verying via Signature
+            // Person is verifying via Signature
             // Check signature matches on-chain signature to confirm ownership of the address.
             require(
                 keccak256(
