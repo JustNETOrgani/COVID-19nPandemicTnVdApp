@@ -467,58 +467,75 @@ export default {
       // This generates a root hash composed of tStatus, vStatus, timeStamp and userID.
       return getMerkleRootFromMkTree(this.merkeTreeData)
     },
+    async sendTnx (txParams) {
+      // Transaction execution in Ethereum from Metamask
+      var txReceipt = await window.ethereum.request({ method: 'eth_sendTransaction', params: [txParams] })
+      return txReceipt
+    },
     anchorOnchain () {
-      if (this.anchorOnBlockBtnState === false) {
-        // Check all needed smart contract-related data have been acquired.
-        if (this.hEcDR !== '' && this.IPFSHashOfhEcDR !== '' && this.personAccount !== '' && this.fullSignature !== '') {
-          console.log('Sending to blockchain')
-          this.submitLoadBtn = true
-          var blockCovid = new web3.eth.Contract(ABI, contractAddress, { defaultGas: suppliedGas })
-          console.log('Contract instance created.')
-          // Smart contract and other logic continues.
-          try {
-            blockCovid.methods.personOnboarding(this.personAccount, this.HashedID, this.IPFSHashOfhEcDR, this.hEcDR, this.mkRoot, this.fullSignature).send({
-              from: this.currentEthAddress,
-              gas: 400000
-            }).on('transactionHash', (hash) => {
-              console.log('Trans. hash is: ', hash)
-            }).on('receipt', (receipt) => {
-              console.log('Trans. Block Number is: ', receipt.blockNumber)
-              // Display success note.
-              this.active += 1 // Increment step.
-              this.$alert('Person successfully anchored on BlockCovid-19.', 'Creation success', {
-                confirmButtonText: 'OK',
-                callback: action => {
+      this.getAccount().then(accounts => {
+        var acc = accounts[0]
+        if (acc === this.currentEthAddress) {
+          // Account switched.
+          if (this.anchorOnBlockBtnState === false) {
+            // Check all needed smart contract-related data have been acquired.
+            if (this.hEcDR !== '' && this.IPFSHashOfhEcDR !== '' && this.personAccount !== '' && this.fullSignature !== '') {
+              console.log('Sending to blockchain')
+              this.submitLoadBtn = true
+              var blockCovid = new web3.eth.Contract(ABI, contractAddress, { defaultGas: suppliedGas })
+              console.log('Contract instance created.')
+              // Smart contract and other logic continues.
+              try {
+                // Transaction parameters
+                const txParams = {
+                  from: this.currentEthAddress,
+                  to: contractAddress,
+                  data: blockCovid.methods.personOnboarding(this.personAccount, this.HashedID, this.IPFSHashOfhEcDR, this.hEcDR, this.mkRoot, this.fullSignature).encodeABI()
+                }
+                this.sendTnx(txParams).then(tnxReceipt => {
+                  console.log('Transaction receipt: ', tnxReceipt)
                   this.$message({
                     type: 'info',
                     message: 'Transaction successful'
                   })
-                  this.anchorOnBlockBtnState = true
-                  // this.getUserChoiceForRedirect() // Allow user to decide.
-                }
-              })
-              this.$message({
-                message: 'Person successfully created on BlockCovid.',
-                type: 'success'
-              })
+                  // Display success note.
+                  this.active += 1 // Increment step.
+                  this.$alert('Person successfully anchored on BlockCovid-19.', 'Creation success', {
+                    confirmButtonText: 'OK',
+                    callback: action => {
+                      this.$message({
+                        type: 'info',
+                        message: 'Transaction successful'
+                      })
+                      this.anchorOnBlockBtnState = true
+                      // this.getUserChoiceForRedirect() // Allow user to decide.
+                    }
+                  })
+                  this.$message({
+                    message: 'Person successfully created on BlockCovid.',
+                    type: 'success'
+                  })
+                  this.submitLoadBtn = false
+                })
+              } catch {
+                console.log('Sorry! Error occured.')
+                this.submitLoadBtn = false
+                this.$message.error('Non-transactional error. Please try again later.')
+              }
               this.submitLoadBtn = false
-            }).on('error', (error) => {
-              console.log('Error occured', error)
-              this.submitLoadBtn = false
-              this.$message.error('Oops. Eror occured during transaction processing.')
-            })
-          } catch {
-            console.log('Sorry! Error occured.')
-            this.submitLoadBtn = false
-            this.$message.error('Non-transactional error. Please try again later.')
+            } else {
+              this.$message.error('Sorry! On-chain data not generated.')
+            }
+          } else {
+            this.$message.error('Sorry! Data on page already processed.')
           }
-          this.submitLoadBtn = false
         } else {
-          this.$message.error('Sorry! On-chain data not generated.')
+          this.$message({
+            message: 'Account switching not done. Switch account now.',
+            type: 'warning'
+          })
         }
-      } else {
-        this.$message.error('Sorry! Data on page already processed.')
-      }
+      })
     },
     getUserChoiceForRedirect () {
       this.$confirm('Do you want to onboard another person?', 'Information needed', {
