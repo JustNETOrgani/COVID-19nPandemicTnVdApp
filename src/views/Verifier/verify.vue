@@ -325,9 +325,9 @@ export default {
       var keyToUse = Object.keys(this.VerifyResult)[currentStep]
       // Acquire encrypted data on IPFS.
       ipfs.cat(this.enteredIPFShash).then(retrievedData => {
-        console.log('Data received from IPFS')
+        console.log('Data received from IPFS', JSON.parse(retrievedData.toString()))
         var EcDRwithSig = JSON.parse(retrievedData.toString()) // Convert to string and parse as JSON object.
-        if (Object.keys(EcDRwithSig).length > 0 && 'timeStamp' in EcDRwithSig) {
+        if (Object.keys(EcDRwithSig).length > 1 && 'timeStamp' in EcDRwithSig) {
           // Get header.
           this.VerifyResult[keyToUse].status = 'success'
           // Check timestamp.
@@ -479,6 +479,7 @@ export default {
               // this.getUserChoice()
             }
           })
+          this.verifyBtnLoadState = false
         } else {
           // Person failed proof verification.
           // Change status.
