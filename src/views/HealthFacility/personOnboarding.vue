@@ -269,7 +269,7 @@ export default {
               this.timeStamp = data.tTime
               console.log('Data: ', data)
               // Encrypt data using user public key ---> EcDR
-              this.importPubKeyAndEncrypt(data).then(encryptedDataRes => {
+              this.importPubKeyAndEncrypt(JSON.stringify(data)).then(encryptedDataRes => {
                 console.log('EcDR: ', encryptedDataRes)
                 this.EcDR = encryptedDataRes
                 // Hash encrypted data---> hEcDR.
