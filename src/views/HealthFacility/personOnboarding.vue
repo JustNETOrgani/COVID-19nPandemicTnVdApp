@@ -124,7 +124,7 @@
 <script>
 import ethEnabled from '@/assets/js/web3nMetaMask'
 import * as signatureGenerator from '@/assets/js/sigHelperFns'
-import { generateKeyPair, asymmEncrypt } from '@/assets/js/asymmEncrypt'
+// import { generateKeyPair, asymmEncrypt } from '@/assets/js/asymmEncrypt'
 import getHash from '@/assets/js/hashFunc'
 import web3 from '@/assets/js/web3Only'
 import { ABI, contractAddress, suppliedGas } from '@/assets/js/contractABI'
@@ -269,7 +269,7 @@ export default {
               this.timeStamp = data.tTime
               console.log('Data: ', data)
               // Encrypt data using user public key ---> EcDR
-              this.EcDR = asymmEncrypt(this.AHPkeyGenerated, data, this.pubKeyOfPerson)
+              this.EcDR = this.encrypt(data)
               console.log('EcDR: ', this.EcDR)
               // Hash encrypted data---> hEcDR.
               getHash(this.EcDR).then(res => {
@@ -309,26 +309,16 @@ export default {
     async getPublicKeyOfPerson () {
       this.$prompt('Please input public key of Person.', 'Information required', {
         confirmButtonText: 'OK',
-        cancelButtonText: 'Cancel',
-        inputPattern: /^0x[0-9A-F]{64}$/i
+        cancelButtonText: 'Cancel'
       }).then(({ value }) => {
         // Valid Public key before proceeding.
-        this.pubKeyOfPerson = this.convertHextoBytes(value.substring(2))
-        // Create key pair.
-        var AHPkeyGen = generateKeyPair()
-        this.AHPkeyGenerated = AHPkeyGen.secretKey
+        this.pubKeyOfPerson = value
         console.log('Public key acquired.')
       }).catch((err) => {
         console.log('User has cancelled.', err)
         this.$message.error('Sorry! Public key of person required. Reloading...')
         window.location.reload() // Reload page.
       })
-    },
-    // Some helper functions during encryption.
-    convertHextoBytes (hexString) {
-      var bytes = new Uint8Array(Math.ceil(hexString.length / 2))
-      for (var i = 0; i < bytes.length; i++) bytes[i] = parseInt(hexString.substr(i * 2, 2), 16)
-      return bytes
     },
     signatureOfAHP () {
       // eslint-disable-next-line no-return-assign
@@ -555,6 +545,66 @@ export default {
         })
         this.$router.push('healthFacIndexPg')
       })
+    },
+    encrypt (plaintext) {
+      this.importPubKeyAndEncrypt(plaintext).then(encryptedDataRes => {
+        console.log('Encrypted Msg: ', encryptedDataRes)
+        return encryptedDataRes
+      })
+    },
+    async importPubKeyAndEncrypt (plaintext) {
+      // const plaintext = 'This text will be encoded UTF8 and may contain special characters like § and €.'// Also works for json.
+
+      try {
+        const pub = await this.importPublicKey(this.pubKeyOfPerson)
+        const encrypted = await this.encryptRSA(pub, new TextEncoder().encode(plaintext))
+        const encryptedBase64 = window.btoa(this.ab2str(encrypted))
+        // console.log('Encrypted Msg: ', encryptedBase64.replace(/(.{64})/g, '$1\n'))
+        return encryptedBase64.replace(/(.{64})/g, '$1\n')
+      } catch (error) {
+        console.log('Error during encryption', error)
+      }
+    },
+    // Helper functions to encrypt.
+    async importPublicKey (spkiPem) {
+      return await window.crypto.subtle.importKey(
+        'spki',
+        this.getSpkiDer(spkiPem),
+        {
+          name: 'RSA-OAEP',
+          hash: 'SHA-256'
+        },
+        true,
+        ['encrypt']
+      )
+    },
+    async encryptRSA (key, plaintext) {
+      const encrypted = await window.crypto.subtle.encrypt(
+        {
+          name: 'RSA-OAEP'
+        },
+        key,
+        plaintext
+      )
+      return encrypted
+    },
+    ab2str (buf) {
+      return String.fromCharCode.apply(null, new Uint8Array(buf))
+    },
+    getSpkiDer (spkiPem) {
+      const pemHeader = '-----BEGIN PUBLIC KEY-----'
+      const pemFooter = '-----END PUBLIC KEY-----'
+      var pemContents = spkiPem.substring(pemHeader.length, spkiPem.length - pemFooter.length)
+      var binaryDerString = window.atob(pemContents)
+      return this.str2ab(binaryDerString)
+    },
+    str2ab (str) {
+      const buf = new ArrayBuffer(str.length)
+      const bufView = new Uint8Array(buf)
+      for (let i = 0, strLen = str.length; i < strLen; i++) {
+        bufView[i] = str.charCodeAt(i)
+      }
+      return buf
     }
   }
 }
