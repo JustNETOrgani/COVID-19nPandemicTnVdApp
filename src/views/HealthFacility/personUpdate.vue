@@ -124,7 +124,9 @@
 <script>
 import ethEnabled from '@/assets/js/web3nMetaMask'
 import * as signatureGenerator from '@/assets/js/sigHelperFns'
-import { generateKeyPair, asymmEncrypt } from '@/assets/js/asymmEncrypt'
+// import { generateKeyPair, asymmEncrypt } from '@/assets/js/asymmEncrypt'
+import getMerkleRootFromMkTree from '@/assets/js/getMerkleRootOfData'
+import computeIPFShash from '@/assets/js/computeIPFShashBeforeStorage'
 import getHash from '@/assets/js/hashFunc'
 import web3 from '@/assets/js/web3Only'
 import { ABI, contractAddress, suppliedGas } from '@/assets/js/contractABI'
@@ -155,8 +157,9 @@ export default {
       // Dynamic variables.
       EcDR: '',
       hEcDR: '',
-      testTime: '',
+      timeStamp: '',
       IPFSHashOfhEcDR: '',
+      HashedID: '',
       fullSignature: '',
       signature_substring: '',
       address: '',
@@ -165,6 +168,8 @@ export default {
       pubKeyOfPerson: '',
       AHPkeyGenerated: '',
       sigOfAHP: '',
+      mkRoot: '',
+      merkeTreeData: [],
       // Loading states
       personOnboardLoadBtn: false,
       loadingPOnboardingPage: true,
@@ -256,25 +261,87 @@ export default {
             this.personOnboardLoadBtn = true
             if (valid) {
               var data = {
-                centerID: this.updatePerson.userID,
+                userID: this.updatePerson.userID,
                 tStatus: this.updatePerson.tStatus,
                 vStatus: this.updatePerson.vStatus,
                 tTime: Math.round(+new Date() / 1000)// unix timestamp
               }
-              this.testTime = data.tTime
+              this.timeStamp = data.tTime
               console.log('Data: ', data)
               // Access previous records from IPFS.
+              this.$prompt('Please input IPFS hash.', 'Information required', {
+                confirmButtonText: 'OK',
+                cancelButtonText: 'Cancel'
+              }).then(({ value }) => {
+                // Valid Public key before proceeding.
+                ipfs.cat(value).then(retrievedData => {
+                  console.log('Data received from IPFS')
+                  var EcDRwithSig = JSON.parse(retrievedData.toString()) // Convert to string and parse as JSON object.
+                  console.log('Pulled data: ', EcDRwithSig)
+                  // Update it.
+                  if (Object.keys(EcDRwithSig).length > 0 && 'timeStamp' in EcDRwithSig) {
+                    // Correct IPFS data pulled.
+                    // Allow user to decrypt.
+                    this.$prompt('Decryption required.', 'Information required', {
+                      confirmButtonText: 'OK',
+                      cancelButtonText: 'Cancel'
+                    }).then(({ value }) => {
+                      this.importPrivateKeyAndDecrypt(EcDRwithSig.encryptedData, value).then(decryptedData => {
+                        var originalData = JSON.parse(decryptedData.toString())
+                        console.log('Decrypted data: ', originalData)
+                        // Check userID before performing update
+                        if (originalData.userID === data.userID) {
+                          // Perform update
+                          originalData.tStatus = data.tStatus
+                          originalData.vStatus = data.vStatus
+                          originalData.tTime = data.tTime
+                          // Perform encryption.
+                          this.importPubKeyAndEncrypt(JSON.stringify(originalData)).then(encryptedDataRes => {
+                            console.log('EcDR: ', encryptedDataRes)
+                            this.EcDR = encryptedDataRes
+                            // Hash encrypted data---> hEcDR.
+                            getHash(this.EcDR).then(res => {
+                              this.hEcDR = res
+                              // Hash the UserID alone as input to the SC.
+                              getHash(data.userID).then(HID => {
+                                this.HashedID = HID
+                                console.log('Hashed ID: ', this.HashedID)
+                                // Prepare data for Merkle Tree.
+                                this.merkeTreeData.push(data.tStatus, data.vStatus, this.timeStamp, this.HashedID)
+                                // AHP signs hEcDR to get signature. --->AHPsignature
+                                this.signatureOfAHP() // Includes push to IPFS.
+                              })
+                            })
+                          })
+                        } else {
+                          this.personOnboardLoadBtn = false
+                          console.log('User ID mismatch.')
+                          this.$message.error('Sorry! Mismatch in user ID detected.')
+                        }
+                      }).catch(err => {
+                        this.personOnboardLoadBtn = false
+                        console.log('Error decrypting data.', err)
+                        this.$message.error('Sorry! Possible wrong decryption key.')
+                      })
+                    })
+                  } else {
+                    this.personOnboardLoadBtn = false
+                    console.log('Invalid encrypted data from IPFS for Blockcovid.')
+                    this.$message.error('Invalid encrypted data from IPFS for Blockcovid.')
+                  }
+                })
+              })
               // Decrypt it.
               // Update it.
               // Encrypt data using user public key ---> EcDR
-              this.EcDR = asymmEncrypt(this.AHPkeyGenerated, data, this.pubKeyOfPerson)
-              console.log('EcDR: ', this.EcDR)
+              // this.EcDR = asymmEncrypt(this.AHPkeyGenerated, data, this.pubKeyOfPerson)
+              // console.log('EcDR: ', this.EcDR)
               // Hash encrypted data---> hEcDR.
-              getHash(this.EcDR).then(res => {
-                this.hEcDR = res
-                // AHP signs hEcDR to get signature. --->AHPsignature
-                this.signatureOfAHP() // Includes push to IPFS.
-              })
+              // getHash(this.EcDR).then(res => {
+              // this.hEcDR = res
+              // AHP signs hEcDR to get signature. --->AHPsignature
+              // this.signatureOfAHP() // Includes push to IPFS.
+              // })
               // Person signs IPFShash to get signature.
               // Anchor data onto the blockchain via Smart Contract.
             } else {
@@ -300,26 +367,16 @@ export default {
     async getPublicKeyOfPerson () {
       this.$prompt('Please input public key of Person.', 'Information required', {
         confirmButtonText: 'OK',
-        cancelButtonText: 'Cancel',
-        inputPattern: /^0x[0-9A-F]{64}$/i
+        cancelButtonText: 'Cancel'
       }).then(({ value }) => {
         // Valid Public key before proceeding.
-        this.pubKeyOfPerson = this.convertHextoBytes(value.substring(2))
-        // Create key pair.
-        var AHPkeyGen = generateKeyPair()
-        this.AHPkeyGenerated = AHPkeyGen.secretKey
+        this.pubKeyOfPerson = value
         console.log('Public key acquired.')
       }).catch((err) => {
         console.log('User has cancelled.', err)
         this.$message.error('Sorry! Public key of person required. Reloading...')
         window.location.reload() // Reload page.
       })
-    },
-    // Some helper functions during encryption.
-    convertHextoBytes (hexString) {
-      var bytes = new Uint8Array(Math.ceil(hexString.length / 2))
-      for (var i = 0; i < bytes.length; i++) bytes[i] = parseInt(hexString.substr(i * 2, 2), 16)
-      return bytes
     },
     signatureOfAHP () {
       // eslint-disable-next-line no-return-assign
@@ -331,23 +388,63 @@ export default {
       })
     },
     pushToIPFShub () {
-      var encryptedDataToSendToJviaIPFS = JSON.stringify({ encryptedData: this.EcDR, signedByAHP: this.sigOfAHP, testTime: this.testTime })
-      // console.log('Connecting to IPFS.')
-      const MyBuffer = window.Ipfs.Buffer
-      var dataToBuffer = MyBuffer.from(encryptedDataToSendToJviaIPFS)
-      // console.log('Buffer conversion done.')
-      ipfs.add(dataToBuffer).then(res => {
-        console.log('Data upload to IPFS sucessful')
-        this.$message('File upload to IPFS successful.')
-        this.IPFSHashOfhEcDR = res[0].hash
-        this.active += 1 // Increment step by 1 to move to next step.
-        this.personOnboardLoadBtn = false
-        if (this.accountChangeStatus === false) {
-          this.accountSwitchDialogVisible = true
-          // Change state of processData button.
-          this.processDataBtnState = true
-        }
-      })
+      const merkleToutput = this.getMerkleRoot()
+      if (merkleToutput.aProof === true) {
+        this.mkRoot = merkleToutput.merkleRoot
+        console.log('Data to IPFS: ', { timeStamp: this.timeStamp, sigOfAHP: this.sigOfAHP, encryptedData: this.EcDR })
+        var encryptedDataToSendToJviaIPFS = JSON.stringify({ timeStamp: this.timeStamp, sigOfAHP: this.sigOfAHP, encryptedData: this.EcDR })
+        // console.log('Connecting to IPFS.')
+        const MyBuffer = window.Ipfs.Buffer
+        var dataToBuffer = MyBuffer.from(encryptedDataToSendToJviaIPFS)
+        // console.log('Buffer conversion done.')
+        // Pre-compute IPFS hash before pushing to IPFS.
+        computeIPFShash(dataToBuffer).then(returnedIPFShash => {
+          ipfs.add(dataToBuffer).then(res => {
+          // Confirm returned IPFS matches precomputed hash.
+            if (returnedIPFShash === res[0].hash) {
+            // Match confirmed
+              this.IPFSHashOfhEcDR = res[0].hash
+              console.log('Data upload to IPFS sucessful')
+              this.$message('File upload to IPFS successful.')
+              this.active += 1 // Increment step by 1 to move to next step.
+              this.personOnboardLoadBtn = false
+              if (this.accountChangeStatus === false) {
+                this.accountSwitchDialogVisible = true
+                // Change state of processData button.
+                this.processDataBtnState = true
+              }
+            } else {
+              this.$message({
+                message: 'IPFS mismatch! Possible MiTM attack',
+                type: 'warning'
+              })
+              this.$alert('Possible MiTM attack! IPFS mismatch! ', 'IPFS hash mismatch', {
+                confirmButtonText: 'OK',
+                callback: action => {
+                  this.$message({
+                    type: 'warning ',
+                    message: 'User informed'
+                  })
+                }
+              })
+            }
+          })
+        })
+      } else {
+        this.$alert('Invalid proof generation of covid records. ', 'Invalid Proof', {
+          confirmButtonText: 'OK',
+          callback: action => {
+            this.$message({
+              type: 'warning ',
+              message: 'User informed'
+            })
+          }
+        })
+      }
+    },
+    getMerkleRoot () {
+      // This generates a root hash composed of tStatus, vStatus, timeStamp and userID.
+      return getMerkleRootFromMkTree(this.merkeTreeData)
     },
     getPersonSig () {
       if (this.getPersonSigBtnState === false) {
@@ -407,7 +504,7 @@ export default {
       console.log('Generating QR code containing IPFS hash of person.')
       // Update the QR code instance.
       qrCode.update({
-        data: 'https://ipfs.io/ipfs/' + userIPFShash
+        data: userIPFShash + '' + this.HashedID
       })
       console.log('Appending QR code to DOM.')
       document.getElementById('overlay').style.display = 'block'
@@ -418,58 +515,75 @@ export default {
     qrCodeDivDisappear () {
       document.getElementById('overlay').style.display = 'none'
     },
+    async sendTnx (txParams) {
+      // Transaction execution in Ethereum from Metamask
+      var txReceipt = await window.ethereum.request({ method: 'eth_sendTransaction', params: [txParams] })
+      return txReceipt
+    },
     anchorOnchain () {
-      if (this.anchorOnBlockBtnState === false) {
-        // Check all needed smart contract-related data have been acquired.
-        if (this.hEcDR !== '' && this.IPFSHashOfhEcDR !== '' && this.personAccount !== '' && this.fullSignature !== '') {
-          console.log('Sending to blockchain')
-          this.submitLoadBtn = true
-          var blockCovid = new web3.eth.Contract(ABI, contractAddress, { defaultGas: suppliedGas })
-          console.log('Contract instance created.')
-          // Smart contract and other logic continues.
-          try {
-            blockCovid.methods.updatePersonTestStatus(this.personAccount, this.IPFSHashOfhEcDR, this.hEcDR, this.onboardPerson.tStatus, this.onboardPerson.vStatus, this.fullSignature).send({
-              from: this.currentEthAddress,
-              gas: 400000
-            }).on('transactionHash', (hash) => {
-              console.log('Trans. hash is: ', hash)
-            }).on('receipt', (receipt) => {
-              console.log('Trans. Block Number is: ', receipt.blockNumber)
-              // Display success note.
-              this.active += 1 // Increment step.
-              this.$alert('Person data updated successfully on BlockCovid-19.', 'Record update success', {
-                confirmButtonText: 'OK',
-                callback: action => {
+      this.getAccount().then(accounts => {
+        var acc = accounts[0]
+        if (acc === this.currentEthAddress) {
+          // Account switched.
+          if (this.anchorOnBlockBtnState === false) {
+            // Check all needed smart contract-related data have been acquired.
+            if (this.hEcDR !== '' && this.IPFSHashOfhEcDR !== '' && this.personAccount !== '' && this.fullSignature !== '') {
+              console.log('Sending to blockchain')
+              this.submitLoadBtn = true
+              var blockCovid = new web3.eth.Contract(ABI, contractAddress, { defaultGas: suppliedGas })
+              console.log('Contract instance created.')
+              // Smart contract and other logic continues.
+              try {
+                // Transaction parameters
+                const txParams = {
+                  from: this.currentEthAddress,
+                  to: contractAddress,
+                  data: blockCovid.methods.updatePersonTestStatus(this.HashedID, this.IPFSHashOfhEcDR, this.hEcDR, this.mkRoot, this.fullSignature).encodeABI()
+                }
+                this.sendTnx(txParams).then(tnxReceipt => {
+                  console.log('Transaction receipt: ', tnxReceipt)
                   this.$message({
                     type: 'info',
                     message: 'Transaction successful'
                   })
-                  this.anchorOnBlockBtnState = true
-                  // this.getUserChoiceForRedirect()
-                }
-              })
-              this.$message({
-                message: 'Person successfully created on BlockCovid.',
-                type: 'success'
-              })
+                  // Display success note.
+                  this.active += 1 // Increment step.
+                  this.$alert('Person data updated successfully on BlockCovid-19.', 'Record update success', {
+                    confirmButtonText: 'OK',
+                    callback: action => {
+                      this.$message({
+                        type: 'info',
+                        message: 'Transaction successful'
+                      })
+                      this.anchorOnBlockBtnState = true
+                      // this.getUserChoiceForRedirect() // Allow user to decide.
+                    }
+                  })
+                  this.$message({
+                    message: 'Person successfully updated on BlockCovid-19.',
+                    type: 'success'
+                  })
+                  this.submitLoadBtn = false
+                })
+              } catch {
+                console.log('Sorry! Error occured.')
+                this.submitLoadBtn = false
+                this.$message.error('Non-transactional error. Please try again later.')
+              }
               this.submitLoadBtn = false
-            }).on('error', (error) => {
-              console.log('Error occured', error)
-              this.submitLoadBtn = false
-              this.$message.error('Oops. Eror occured during transaction processing.')
-            })
-          } catch {
-            console.log('Sorry! Error occured.')
-            this.submitLoadBtn = false
-            this.$message.error('Non-transactional error. Please try again later.')
+            } else {
+              this.$message.error('Sorry! On-chain data not generated.')
+            }
+          } else {
+            this.$message.error('Sorry! Data on page already processed.')
           }
-          this.submitLoadBtn = false
         } else {
-          this.$message.error('Sorry! On-chain data not generated.')
+          this.$message({
+            message: 'Account switching not done. Switch account now.',
+            type: 'warning'
+          })
         }
-      } else {
-        this.$message.error('Sorry! Data on page already processed.')
-      }
+      })
     },
     getUserChoiceForRedirect () {
       this.$confirm('Do you want to onboard another person?', 'Information needed', {
@@ -489,6 +603,99 @@ export default {
         })
         this.$router.push('healthFacIndexPg')
       })
+    },
+    async importPrivateKeyAndDecrypt (encryptedData, prvKey) {
+      try {
+        const priv = await this.importPrivateKey(prvKey)
+        const decrypted = await this.decryptRSA(priv, this.str2ab(window.atob(encryptedData)))
+        return decrypted
+      } catch (error) {
+        console.log(error)
+      }
+    },
+    async importPrivateKey (pkcs8Pem) {
+      return await window.crypto.subtle.importKey(
+        'pkcs8',
+        this.getPkcs8Der(pkcs8Pem),
+        {
+          name: 'RSA-OAEP',
+          hash: 'SHA-256'
+        },
+        true,
+        ['decrypt']
+      )
+    },
+    async decryptRSA (key, ciphertext) {
+      const decrypted = await window.crypto.subtle.decrypt(
+        {
+          name: 'RSA-OAEP'
+        },
+        key,
+        ciphertext
+      )
+      return new TextDecoder().decode(decrypted)
+    },
+    getPkcs8Der (pkcs8Pem) {
+      const pemHeader = '-----BEGIN PRIVATE KEY-----'
+      const pemFooter = '-----END PRIVATE KEY-----'
+      var pemContents = pkcs8Pem.substring(pemHeader.length, pkcs8Pem.length - pemFooter.length)
+      var binaryDerString = window.atob(pemContents)
+      return this.str2ab(binaryDerString)
+    },
+    str2ab (str) {
+      const buf = new ArrayBuffer(str.length)
+      const bufView = new Uint8Array(buf)
+      for (let i = 0, strLen = str.length; i < strLen; i++) {
+        bufView[i] = str.charCodeAt(i)
+      }
+      return buf
+    },
+    // Encrypting functions.
+    async importPubKeyAndEncrypt (plaintext) {
+      // const plaintext = 'This text will be encoded UTF8 and may contain special characters like § and €.'// Also works for json.
+
+      try {
+        const pub = await this.importPublicKey(this.pubKeyOfPerson)
+        const encrypted = await this.encryptRSA(pub, new TextEncoder().encode(plaintext))
+        const encryptedBase64 = window.btoa(this.ab2str(encrypted))
+        // console.log('Encrypted Msg: ', encryptedBase64.replace(/(.{64})/g, '$1\n'))
+        return encryptedBase64.replace(/(.{64})/g, '$1\n')
+      } catch (error) {
+        console.log('Error during encryption', error)
+      }
+    },
+    // Helper functions to encrypt.
+    async importPublicKey (spkiPem) {
+      return await window.crypto.subtle.importKey(
+        'spki',
+        this.getSpkiDer(spkiPem),
+        {
+          name: 'RSA-OAEP',
+          hash: 'SHA-256'
+        },
+        true,
+        ['encrypt']
+      )
+    },
+    async encryptRSA (key, plaintext) {
+      const encrypted = await window.crypto.subtle.encrypt(
+        {
+          name: 'RSA-OAEP'
+        },
+        key,
+        plaintext
+      )
+      return encrypted
+    },
+    ab2str (buf) {
+      return String.fromCharCode.apply(null, new Uint8Array(buf))
+    },
+    getSpkiDer (spkiPem) {
+      const pemHeader = '-----BEGIN PUBLIC KEY-----'
+      const pemFooter = '-----END PUBLIC KEY-----'
+      var pemContents = spkiPem.substring(pemHeader.length, spkiPem.length - pemFooter.length)
+      var binaryDerString = window.atob(pemContents)
+      return this.str2ab(binaryDerString)
     }
   }
 }
