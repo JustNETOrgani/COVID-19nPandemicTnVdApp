@@ -55,9 +55,9 @@ const routes = [
   },
   // Person.
   {
-    path: '/Person/createBlockchainAccount',
-    name: 'getBlockchainAccount',
-    component: () => import('@/views/Person/createBlockchainAccount.vue')
+    path: '/Person/createBlockchainAccountNcryptoKeys',
+    name: 'getBlockchainAccountnCryptoKeys',
+    component: () => import('@/views/Person/createBlockchainAccountNcryptoKeys.vue')
   }
 ]
 const router = new VueRouter({

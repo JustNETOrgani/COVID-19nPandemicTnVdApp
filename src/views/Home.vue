@@ -19,9 +19,9 @@
         </el-col>
         <el-col :span="6">
           <el-card shadow="hover">
-            <a href="Person/createBlockchainAccount"><img class="unitLogo" src="../assets/imgs/personImg.png" /></a>
+            <a href="Person/createBlockchainAccountNcryptoKeys"><img class="unitLogo" src="../assets/imgs/personImg.png" /></a>
             <br>
-            <el-link :underline="false" href="Person/createBlockchainAccount"><p class="identification">Person</p></el-link>
+            <el-link :underline="false" href="Person/createBlockchainAccountNcryptoKeys"><p class="identification">Person</p></el-link>
           </el-card>
         </el-col>
         <el-col :span="6">
