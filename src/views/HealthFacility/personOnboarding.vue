@@ -269,23 +269,25 @@ export default {
               this.timeStamp = data.tTime
               console.log('Data: ', data)
               // Encrypt data using user public key ---> EcDR
-              this.EcDR = this.encrypt(data)
-              console.log('EcDR: ', this.EcDR)
-              // Hash encrypted data---> hEcDR.
-              getHash(this.EcDR).then(res => {
-                this.hEcDR = res
-                // Hash the UserID alone as input to the SC.
-                getHash(data.userID).then(HID => {
-                  this.HashedID = HID
-                  console.log('Hashed ID: ', this.HashedID)
-                  // Prepare data for Merkle Tree.
-                  this.merkeTreeData.push(data.tStatus, data.vStatus, this.timeStamp, this.HashedID)
-                  // AHP signs hEcDR to get signature. --->AHPsignature
-                  this.signatureOfAHP() // Includes push to IPFS.
+              this.importPubKeyAndEncrypt(data).then(encryptedDataRes => {
+                console.log('EcDR: ', encryptedDataRes)
+                this.EcDR = encryptedDataRes
+                // Hash encrypted data---> hEcDR.
+                getHash(this.EcDR).then(res => {
+                  this.hEcDR = res
+                  // Hash the UserID alone as input to the SC.
+                  getHash(data.userID).then(HID => {
+                    this.HashedID = HID
+                    console.log('Hashed ID: ', this.HashedID)
+                    // Prepare data for Merkle Tree.
+                    this.merkeTreeData.push(data.tStatus, data.vStatus, this.timeStamp, this.HashedID)
+                    // AHP signs hEcDR to get signature. --->AHPsignature
+                    this.signatureOfAHP() // Includes push to IPFS.
+                  })
                 })
-              })
               // Person signs IPFShash to get signature.
               // Anchor data onto the blockchain via Smart Contract.
+              })
             } else {
               console.log('Submission error.')
               this.personOnboardLoadBtn = false
@@ -544,12 +546,6 @@ export default {
           message: 'Redirecting to landing page'
         })
         this.$router.push('healthFacIndexPg')
-      })
-    },
-    encrypt (plaintext) {
-      this.importPubKeyAndEncrypt(plaintext).then(encryptedDataRes => {
-        console.log('Encrypted Msg: ', encryptedDataRes)
-        return encryptedDataRes
       })
     },
     async importPubKeyAndEncrypt (plaintext) {
