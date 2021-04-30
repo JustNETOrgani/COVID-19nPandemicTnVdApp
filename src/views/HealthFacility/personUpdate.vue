@@ -213,7 +213,7 @@ export default {
   },
   computed: {
     isDisabled: function () {
-      return !this.onboardPerson.authCheckBox
+      return !this.updatePerson.authCheckBox
     }
   },
   methods: {
