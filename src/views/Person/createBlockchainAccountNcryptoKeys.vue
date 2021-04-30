@@ -80,7 +80,6 @@ export default {
         console.log('Public key: ', keyPair.publicKey)
         console.log('Private key: ', keyPair.privateKey)
         this.exportPrvCryptoKey(keyPair.privateKey).then(exportedPrvKey => {
-          console.log('Private key in PEM format: ', exportedPrvKey)
           this.prvKey = exportedPrvKey
           this.exportPubCryptoKey(keyPair.publicKey).then(exportedPubKey => {
             this.keyGenBtnLoadState = false
@@ -123,6 +122,15 @@ export default {
       const exportedAsBase64 = window.btoa(exportedAsString)
       const pemExported = `-----BEGIN PUBLIC KEY-----\n${exportedAsBase64}\n-----END PUBLIC KEY-----`
       return pemExported
+    },
+    // General function
+    str2ab (str) {
+      const buf = new ArrayBuffer(str.length)
+      const bufView = new Uint8Array(buf)
+      for (let i = 0, strLen = str.length; i < strLen; i++) {
+        bufView[i] = str.charCodeAt(i)
+      }
+      return buf
     },
     closeDiv () {
       document.getElementById('overlay').style.display = 'none'
