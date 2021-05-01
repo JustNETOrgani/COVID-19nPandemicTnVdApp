@@ -36,13 +36,56 @@ var ABI = [
       },
       {
         indexed: false,
-        internalType: 'string',
-        name: 'ipfsHash',
-        type: 'string'
+        internalType: 'bytes32',
+        name: 'HID',
+        type: 'bytes32'
       }
     ],
     name: 'onboarded',
     type: 'event'
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: 'address',
+        name: 'txInitiator',
+        type: 'address'
+      },
+      {
+        indexed: false,
+        internalType: 'bytes32',
+        name: 'HID',
+        type: 'bytes32'
+      }
+    ],
+    name: 'personUpdated',
+    type: 'event'
+  },
+  {
+    inputs: [
+      {
+        internalType: 'address',
+        name: '',
+        type: 'address'
+      }
+    ],
+    name: 'approvedHC',
+    outputs: [
+      {
+        internalType: 'string',
+        name: 'AHF_name',
+        type: 'string'
+      },
+      {
+        internalType: 'address',
+        name: 'AHF_address',
+        type: 'address'
+      }
+    ],
+    stateMutability: 'view',
+    type: 'function'
   },
   {
     inputs: [
@@ -55,11 +98,6 @@ var ABI = [
         internalType: 'bytes32',
         name: 'HID',
         type: 'bytes32'
-      },
-      {
-        internalType: 'string',
-        name: 'IPFShash',
-        type: 'string'
       },
       {
         internalType: 'bytes32',
@@ -89,25 +127,6 @@ var ABI = [
     type: 'function'
   },
   {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
-        internalType: 'address',
-        name: 'txInitiator',
-        type: 'address'
-      },
-      {
-        indexed: false,
-        internalType: 'string',
-        name: 'ipfsHash',
-        type: 'string'
-      }
-    ],
-    name: 'personUpdated',
-    type: 'event'
-  },
-  {
     inputs: [
       {
         internalType: 'string',
@@ -134,14 +153,14 @@ var ABI = [
   {
     inputs: [
       {
+        internalType: 'address',
+        name: 'personAddress',
+        type: 'address'
+      },
+      {
         internalType: 'bytes32',
         name: 'HID',
         type: 'bytes32'
-      },
-      {
-        internalType: 'string',
-        name: 'IPFShash_new',
-        type: 'string'
       },
       {
         internalType: 'bytes32',
@@ -159,7 +178,7 @@ var ABI = [
         type: 'string'
       }
     ],
-    name: 'updatePersonTestStatus',
+    name: 'updatePersonData',
     outputs: [
       {
         internalType: 'bool',
@@ -172,35 +191,6 @@ var ABI = [
   },
   {
     inputs: [
-      {
-        internalType: 'address',
-        name: '',
-        type: 'address'
-      }
-    ],
-    name: 'approvedHC',
-    outputs: [
-      {
-        internalType: 'string',
-        name: 'AHF_name',
-        type: 'string'
-      },
-      {
-        internalType: 'address',
-        name: 'AHF_address',
-        type: 'address'
-      }
-    ],
-    stateMutability: 'view',
-    type: 'function'
-  },
-  {
-    inputs: [
-      {
-        internalType: 'string',
-        name: 'IPFShash',
-        type: 'string'
-      },
       {
         internalType: 'bytes32',
         name: 'hashOfEncCovDigRec',
@@ -230,7 +220,7 @@ var ABI = [
   }
 ]
 
-var contractAddress = '0x98099794C1C512fe86CB8C92d111EC25a4e01e53'
+var contractAddress = '0x1Bba9445114488422f7794aBC56F0b0436cEFF9a'
 
 var suppliedGas = 3000000
 
