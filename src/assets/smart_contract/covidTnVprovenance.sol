@@ -9,7 +9,6 @@ contract coronaVirusTnV {
         address personAddress; // Blockchain address of person.
         bytes32 HID; // Hashed Identifier of user.
         bytes32 hashOfEncCovDigRec; // Hash of the EcDR
-        string IPFShash; // IPFS hash of encrypted covid Digital records (EcDR).
         bytes32 covidTnVStatus; // Contains Merkle root hash.
         string signature; // Signature generated from the IPFShash as message.
     }
@@ -29,8 +28,8 @@ contract coronaVirusTnV {
     mapping(bytes32 => personhEcDRnAddrLkup) internal personLookup; // Mapping for person lookup based on hEcDR. To be used to "blind verifiers"
     mapping(address => approvedHF) public approvedHC; // Mapping for approved health facilities.
     // Events begin.
-    event onboarded(address indexed txInitiator, string ipfsHash);
-    event personUpdated(address indexed txInitiator, string ipfsHash);
+    event onboarded(address indexed txInitiator, bytes32 HID);
+    event personUpdated(address indexed txInitiator, bytes32 HID);
     event approvedHFdone(string nameOfappHealthFac, address addOfAHF);
 
     // Constructor for the contract.
@@ -75,7 +74,6 @@ contract coronaVirusTnV {
     function personOnboarding(
         address personAddress,
         bytes32 HID,
-        string memory IPFShash,
         bytes32 hashOfEncCovDigRec,
         bytes32 covidTnVStatus,
         string memory signature
@@ -88,20 +86,19 @@ contract coronaVirusTnV {
         person[HID].personAddress = personAddress;
         person[HID].HID = HID;
         person[HID].hashOfEncCovDigRec = hashOfEncCovDigRec;
-        person[HID].IPFShash = IPFShash;
         person[HID].covidTnVStatus = covidTnVStatus;
         person[HID].signature = signature;
         personLookup[hashOfEncCovDigRec]
             .hashOfEncCovDigRec = hashOfEncCovDigRec;
         personLookup[hashOfEncCovDigRec].HID = HID;
-        emit onboarded(msg.sender, IPFShash);
+        emit onboarded(msg.sender, HID);
         return true;
     }
 
     //  Fucntion to update a person's Covid-19 test status by an approvedHealthFacility.
-    function updatePersonTestStatus(
+    function updatePersonData(
+        address personAddress,
         bytes32 HID,
-        string memory IPFShash_new,
         bytes32 hashOfEncCovDigRec_new,
         bytes32 covidTnVStatus,
         string memory signature_new
@@ -111,24 +108,22 @@ contract coronaVirusTnV {
             verifyInclusiveness(msg.sender, approvedHealthFacilities) == 1,
             "Access denied"
         ); // Check msg.sender is part of approvedHealthFacilities.
+        require(person[HID].HID == HID, "Invalid Hashed Identifier");
+        require(person[HID].personAddress == personAddress, "Address mismatch");
         // Update person records
-        require(person[HID].HID != "", "Person unknown");
-        // Update person records
-        person[HID].IPFShash = IPFShash_new;
         person[HID].hashOfEncCovDigRec = hashOfEncCovDigRec_new;
         person[HID].covidTnVStatus = covidTnVStatus;
         person[HID].signature = signature_new;
         personLookup[hashOfEncCovDigRec_new]
             .hashOfEncCovDigRec = hashOfEncCovDigRec_new;
         personLookup[hashOfEncCovDigRec_new].HID = HID;
-        emit personUpdated(msg.sender, IPFShash_new);
+        emit personUpdated(msg.sender, HID);
         return true;
     }
 
     // Function for status verification.
     // Check possibility of removing personAddress and using the resultant address from signature verification. Check out ecrecover.--> Incurs cost.
     function verifyPersonStatus(
-        string memory IPFShash,
         bytes32 hashOfEncCovDigRec,
         bytes32 covidTnVStatus,
         string memory signature
@@ -140,11 +135,6 @@ contract coronaVirusTnV {
             require(
                 ps.covidTnVStatus == covidTnVStatus,
                 "Test or vaccination status mismatch"
-            );
-            require(
-                keccak256(abi.encodePacked(ps.IPFShash)) ==
-                    keccak256(abi.encodePacked(IPFShash)),
-                "IPFS mismatch"
             );
             require(
                 ps.hashOfEncCovDigRec == hashOfEncCovDigRec,
@@ -164,9 +154,6 @@ contract coronaVirusTnV {
             );
             personStruct memory ps =
                 person[personLookup[hashOfEncCovDigRec].HID];
-            (keccak256(abi.encodePacked(ps.IPFShash)) ==
-                keccak256(abi.encodePacked(IPFShash)) &&
-                ps.hashOfEncCovDigRec == hashOfEncCovDigRec);
             require(
                 ps.covidTnVStatus == covidTnVStatus,
                 "Test or vaccination status mismatch"
