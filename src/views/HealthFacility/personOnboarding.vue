@@ -482,7 +482,7 @@ export default {
                 const txParams = {
                   from: this.currentEthAddress,
                   to: contractAddress,
-                  data: blockCovid.methods.personOnboarding(this.personAccount, this.HashedID, this.IPFSHashOfhEcDR, this.hEcDR, this.mkRoot, this.fullSignature).encodeABI()
+                  data: blockCovid.methods.personOnboarding(this.personAccount, this.HashedID, this.hEcDR, this.mkRoot, this.fullSignature).encodeABI()
                 }
                 this.sendTnx(txParams).then(tnxReceipt => {
                   console.log('Transaction receipt: ', tnxReceipt)
