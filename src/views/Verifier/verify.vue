@@ -312,9 +312,9 @@ export default {
       this.enteredIPFShash = ipfsHash
       // Create array object for steps.
       this.VerifyResult = {
-        1: { step: '1', name: 'Retrieving header', status: 'wait' },
+        1: { step: '1', name: 'Getting data from IPFS', status: 'wait' },
         2: { step: '2', name: 'Timestamp check', status: 'wait' },
-        3: { step: '3', name: 'Getting encrypted data', status: 'wait' },
+        3: { step: '3', name: 'Creating Proof', status: 'wait' },
         4: { step: '4', name: 'Hashing encrypted data', status: 'wait' },
         5: { step: '5', name: 'Optional signature request', status: 'wait' },
         6: { step: '6', name: 'Verifying in Smart Contract', status: 'wait' }
