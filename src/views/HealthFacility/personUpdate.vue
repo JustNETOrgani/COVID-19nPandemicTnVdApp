@@ -124,13 +124,11 @@
 <script>
 import ethEnabled from '@/assets/js/web3nMetaMask'
 import * as signatureGenerator from '@/assets/js/sigHelperFns'
-// import { generateKeyPair, asymmEncrypt } from '@/assets/js/asymmEncrypt'
 import getMerkleRootFromMkTree from '@/assets/js/getMerkleRootOfData'
 import computeIPFShash from '@/assets/js/computeIPFShashBeforeStorage'
 import getHash from '@/assets/js/hashFunc'
 import web3 from '@/assets/js/web3Only'
 import { ABI, contractAddress, suppliedGas } from '@/assets/js/contractABI'
-// import convertIPFSstringToBytes from '@/assets/js/convertIPFShash.js'
 const ipfs = new window.Ipfs()
 const qrCode = new window.QRCodeStyling({
   width: 200,
@@ -331,19 +329,6 @@ export default {
                   }
                 })
               })
-              // Decrypt it.
-              // Update it.
-              // Encrypt data using user public key ---> EcDR
-              // this.EcDR = asymmEncrypt(this.AHPkeyGenerated, data, this.pubKeyOfPerson)
-              // console.log('EcDR: ', this.EcDR)
-              // Hash encrypted data---> hEcDR.
-              // getHash(this.EcDR).then(res => {
-              // this.hEcDR = res
-              // AHP signs hEcDR to get signature. --->AHPsignature
-              // this.signatureOfAHP() // Includes push to IPFS.
-              // })
-              // Person signs IPFShash to get signature.
-              // Anchor data onto the blockchain via Smart Contract.
             } else {
               console.log('Submission error.')
               this.personOnboardLoadBtn = false

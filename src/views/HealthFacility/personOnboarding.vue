@@ -124,13 +124,11 @@
 <script>
 import ethEnabled from '@/assets/js/web3nMetaMask'
 import * as signatureGenerator from '@/assets/js/sigHelperFns'
-// import { generateKeyPair, asymmEncrypt } from '@/assets/js/asymmEncrypt'
 import getHash from '@/assets/js/hashFunc'
 import web3 from '@/assets/js/web3Only'
 import { ABI, contractAddress, suppliedGas } from '@/assets/js/contractABI'
 import getMerkleRootFromMkTree from '@/assets/js/getMerkleRootOfData'
 import computeIPFShash from '@/assets/js/computeIPFShashBeforeStorage'
-// import convertIPFSstringToBytes from '@/assets/js/convertIPFShash.js'
 const ipfs = new window.Ipfs()
 const qrCode = new window.QRCodeStyling({
   width: 200,
