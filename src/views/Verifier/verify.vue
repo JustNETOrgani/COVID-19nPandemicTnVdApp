@@ -458,7 +458,7 @@ export default {
       var keyToUse = Object.keys(this.VerifyResult)[currentStep]
       // Smart contract and other logic continues.
       // This is call operation. Any account can be used. It cost zero Eth.
-      blockCovid.methods.verifyPersonStatus(ipfsHash, this.hEcDR, merkeRoot, this.fullSignature).call({ from: this.currentAddress }).then(res => {
+      blockCovid.methods.verifyPersonStatus(this.hEcDR, merkeRoot, this.fullSignature).call({ from: this.currentAddress }).then(res => {
         // console.log('Response from Contract: ', res)
         var verificationResult = res
         if (verificationResult === true) {
