@@ -14,8 +14,6 @@
     "ethereumjs-util": "^7.0.7",
     "ipfs-only-hash": "^4.0.0",
     "merkletreejs": "^0.2.18",
-    "tweetnacl": "^1.0.3",
-    "tweetnacl-util": "^0.15.1",
     "vue": "^2.6.11",
     "vue-router": "^3.2.0",
     "vuex": "^3.4.0",
