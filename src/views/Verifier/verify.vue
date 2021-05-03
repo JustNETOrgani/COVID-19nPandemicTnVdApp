@@ -240,14 +240,19 @@ export default {
         message: 'QR code successfully scanned.',
         type: 'success'
       })
-      var retrievedIPFShash = (qrCodeMessage.substr(0, 46)).replace(/"/g, '') // Get first 46 characters and Remove the double quotes.
-      var hashedID = (qrCodeMessage.substr(qrCodeMessage.length - 66)).replace(/"/g, '') // Get last 66 characters and Remove the double quotes.
-      console.log('Retrieved ipfs hash: ', retrievedIPFShash)
-      console.log('Retrieved hashed ID: ', hashedID)
+      var retrievedIPFShash = (qrCodeMessage.substr(qrCodeMessage.length - 46)).replace(/"/g, '') // Get last 46 characters and Remove the double quotes.
+      // var hashedID = (qrCodeMessage.substr(qrCodeMessage.length - 66)).replace(/"/g, '') // Get last 66 characters and Remove the double quotes.
       if (this.ipfsInputValidation(retrievedIPFShash) !== 0) {
         this.scanPersonQRcodeLoadBtn = false
-        // Person verification process.
-        this.performVerification(retrievedIPFShash, hashedID)
+        console.log('Retrieved ipfs hash: ', retrievedIPFShash)
+        this.$prompt('Please input hash of your ID.', 'Information required', {
+          confirmButtonText: 'OK',
+          cancelButtonText: 'Cancel'
+        }).then(({ value }) => {
+          console.log('Entered hashed ID: ', value)
+          // Person verification process.
+          this.performVerification(retrievedIPFShash, value)
+        })
       } else {
         this.$message({
           message: 'Sorry! Invalid IPFS hash received from QR code. Please, scan BlockCovid compatible QR code.',
