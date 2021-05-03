@@ -489,7 +489,7 @@ export default {
       console.log('Generating QR code containing IPFS hash of person.')
       // Update the QR code instance.
       qrCode.update({
-        data: userIPFShash + '' + this.HashedID
+        data: 'https://ipfs.io/ipfs/' + userIPFShash
       })
       console.log('Appending QR code to DOM.')
       document.getElementById('overlay').style.display = 'block'
