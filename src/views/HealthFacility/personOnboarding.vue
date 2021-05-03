@@ -168,6 +168,7 @@ export default {
       AHPkeyGenerated: '',
       sigOfAHP: '',
       merkeTreeData: [],
+      pgAccounts: [],
       // Loading states
       personOnboardLoadBtn: false,
       loadingPOnboardingPage: true,
@@ -204,6 +205,7 @@ export default {
       this.loadingPOnboardingPage = false
       this.getAccount().then(accounts => {
         this.currentEthAddress = accounts[0]
+        this.pgAccounts.push(this.currentEthAddress)
         console.log('Current account: ', this.currentEthAddress)
         this.getPublicKeyOfPerson()
       })
@@ -223,6 +225,7 @@ export default {
     switchAccount () {
       var myRoot = this // Ensure all this or vue global variables can be accessed within this fucntion via myRoot.
       window.ethereum.on('accountsChanged', function (accounts) {
+        myRoot.pgAccounts.push(accounts[0])
         myRoot.personAccount = accounts[0]
         console.log('Selected account: ', myRoot.personAccount)
         myRoot.$message({
@@ -480,7 +483,7 @@ export default {
                 const txParams = {
                   from: this.currentEthAddress,
                   to: contractAddress,
-                  data: blockCovid.methods.personOnboarding(this.personAccount, this.HashedID, this.hEcDR, this.mkRoot, this.fullSignature).encodeABI()
+                  data: blockCovid.methods.personOnboarding(this.pgAccounts[1], this.HashedID, this.hEcDR, this.mkRoot, this.fullSignature).encodeABI()
                 }
                 this.sendTnx(txParams).then(tnxReceipt => {
                   console.log('Transaction receipt: ', tnxReceipt)
