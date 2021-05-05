@@ -74,26 +74,6 @@
           <div id="qrCodeScanning" width="500px"></div>
           <el-button type="primary" @click="qrCodeDivDisappear()">Done</el-button>
         </div>
-        <el-dialog title="Proof type" :visible.sync="proofTypeDialogFormVisible" width="35%">
-          <el-form :model="proofTypeForm" :rules="rules" ref="proofTypeForm">
-            <el-form-item label="Test status" :label-width="proofTypeFormLabelWidth">
-              <el-select v-model="proofTypeForm.tStatus" placeholder="Select test status">
-                  <el-option label="Positive" value="Positive"></el-option>
-                  <el-option label="Negative" value="Negative"></el-option>
-              </el-select>
-            </el-form-item>
-            <el-form-item label="Vaccination status" :label-width="proofTypeFormLabelWidth">
-              <el-select v-model="proofTypeForm.vStatus" placeholder="Select vaccination status">
-                <el-option label="Not vaccinated" value="Not Vaccinated"></el-option>
-                <el-option label="Vaccinated" value="vaccinated"></el-option>
-              </el-select>
-            </el-form-item>
-          </el-form>
-          <span slot="footer" class="dialog-footer">
-            <el-button @click="proofTypeDialogFormVisible = false">Cancel</el-button>
-            <el-button type="primary" @click="getUserProofType('proofTypeForm')">Confirm</el-button>
-          </span>
-        </el-dialog>
     </div>
 </template>
 
@@ -114,20 +94,20 @@ export default {
         ifpsHash: '',
         hashedID: ''
       },
-      proofTypeForm: {
-        tStatus: '',
-        vStatus: ''
-      },
       enteredIPFShash: '',
       hEcDR: '',
       sigOnIPFShash: '',
       fullSignature: '',
       currentAddress: '',
       VerifyResult: [],
+      scResponse: [],
+      errorCount: 0,
+      userAssertions: { green: ['Negative', 'vaccinated'], yellow: ['Negative', 'Not Vaccinated'] },
       accountChangeStatus: false,
       proofTypeFormLabelWidth: '135px',
       setUserProofType: false,
-      merkleObject: [],
+      merkleObject: { first: [], second: [] },
+      merkleRoot: [],
       // Loading states
       verifyBtnLoadState: false,
       scanPersonQRcodeLoadBtn: false,
@@ -136,17 +116,10 @@ export default {
       step: 1,
       // Dialog.
       dialogVisible: false,
-      proofTypeDialogFormVisible: false,
       rules: {
         ifpsHash: [
           { required: true, message: 'Please input IPFS hash of the paper', trigger: 'blur' },
           { min: 46, message: 'Length should be at least 46', trigger: 'blur' }
-        ],
-        tStatus: [
-          { required: true, message: 'Please select test status from the list.', trigger: 'blur' }
-        ],
-        vStatus: [
-          { required: true, message: 'Please select vaccination status from the list.', trigger: 'blur' }
         ]
       }
     }
@@ -158,7 +131,6 @@ export default {
       this.getAccount().then(accounts => {
         this.currentAddress = accounts[0]
         console.log('Current account: ', this.currentAddress)
-        this.proofTypeDialogFormVisible = true
       })
     }
   },
@@ -183,25 +155,6 @@ export default {
         })
         console.log('Account switched')
         myRoot.accountChangeStatus = true
-      })
-    },
-    getUserProofType (formName) {
-      this.$refs[formName].validate(valid => {
-        if (valid) {
-          this.merkleObject.push(this.proofTypeForm.tStatus, this.proofTypeForm.vStatus)
-          // User proof set.
-          this.setUserProofType = true
-          // Close the dialog.
-          this.proofTypeDialogFormVisible = false
-        } else {
-          console.log('Submission error.')
-          this.$message({
-            message: 'Please select from the dropdown list.',
-            type: 'warning'
-          })
-          this.setUserProofType = false
-          return false
-        }
       })
     },
     backToPrvPg () {
@@ -265,40 +218,35 @@ export default {
       console.log('QR scan error: ', error)
     },
     submitForm (formName) {
-      // Check that user has already set proof type.
-      if (this.setUserProofType === true) {
-        if (this.verificationForm.ifpsHash !== '') {
-          if (this.ipfsInputValidation(this.verificationForm.ifpsHash) !== 0) {
-            this.$refs[formName].validate(valid => {
-              this.verifyBtnLoadState = true
-              if (valid) {
+      if (this.verificationForm.ifpsHash !== '') {
+        if (this.ipfsInputValidation(this.verificationForm.ifpsHash) !== 0) {
+          this.$refs[formName].validate(valid => {
+            this.verifyBtnLoadState = true
+            if (valid) {
               // Perform verification
-                var data = {
-                  ipfsHash: this.verificationForm.ifpsHash,
-                  hashedID: this.verificationForm.hashedID
-                }
-                console.log('Data: ', data)
-                this.performVerification(data.ipfsHash, data.hashedID)
-              } else {
-                console.log('Submission error.')
-                this.verifyBtnLoadState = false
-                return false
+              var data = {
+                ipfsHash: this.verificationForm.ifpsHash,
+                hashedID: this.verificationForm.hashedID
               }
-            })
-          } else {
-            this.$message({
-              message: 'Sorry! Invalid IPFS hash entered. Please, re-enter.',
-              type: 'warning'
-            })
-          }
+              console.log('Data: ', data)
+              this.performVerification(data.ipfsHash, data.hashedID)
+            } else {
+              console.log('Submission error.')
+              this.verifyBtnLoadState = false
+              return false
+            }
+          })
         } else {
           this.$message({
-            message: 'Sorry! IPFS field cannot be empty.',
+            message: 'Sorry! Invalid IPFS hash entered. Please, re-enter.',
             type: 'warning'
           })
         }
       } else {
-        this.proofTypeDialogFormVisible = true
+        this.$message({
+          message: 'Sorry! IPFS field cannot be empty.',
+          type: 'warning'
+        })
       }
     },
     getMerkleTree (data) {
@@ -347,11 +295,13 @@ export default {
             keyToUse = Object.keys(this.VerifyResult)[currentStep]
             this.VerifyResult[keyToUse].status = 'success'
             // Construct merkle root.
-            this.merkleObject.push(timeStamp, hashedID) // All four needed acquired.
+            this.merkleObject.first.push(this.userAssertions.green[0], this.userAssertions.green[1], timeStamp, hashedID) // All four needed acquired.
+            this.merkleObject.second.push(this.userAssertions.yellow[0], this.userAssertions.yellow[1], timeStamp, hashedID) // All four needed acquired.
             // Generate Merkle tree.
-            const merkleToutput = this.getMerkleTree(this.merkleObject)
-            if (merkleToutput.aProof === true) {
-              const merkleRoot = merkleToutput.merkleRoot
+            const merkleToutputOne = this.getMerkleTree(this.merkleObject.first)
+            const merkleToutputTwo = this.getMerkleTree(this.merkleObject.second)
+            if (merkleToutputOne.aProof === true && merkleToutputTwo.aProof === true) {
+              this.merkleRoot.push(merkleToutputOne.merkleRoot, merkleToutputTwo.merkleRoot)
               // Increment step.
               this.VerifyResult[keyToUse].status = 'success'
               currentStep += 1
@@ -393,7 +343,7 @@ export default {
                           // Change status.
                           this.VerifyResult[keyToUse].status = 'success'
                           // Continue verification on-chain.
-                          this.continueVerificationOnchain(currentStep, hIPFShash, merkleRoot)
+                          this.continueVerificationOnchain(currentStep, hIPFShash, this.merkleRoot)
                         }
                       }).catch(err => {
                         console.log('Signature error: ', err)
@@ -409,7 +359,7 @@ export default {
                       this.VerifyResult[keyToUse].status = 'success'
                       currentStep += 1
                       // Continue verification on-chain.
-                      this.continueVerificationOnchain(currentStep, hIPFShash, merkleRoot)
+                      this.continueVerificationOnchain(currentStep, hIPFShash, this.merkleRoot)
                     })
                   })
                 } else {
@@ -461,53 +411,47 @@ export default {
     },
     continueVerificationOnchain (currentStep, hIPFShash, merkeRoot) {
       // Verify on-chain
+      console.log('Verifying on-chain.')
       var blockCovid = new web3.eth.Contract(ABI, contractAddress, { defaultGas: suppliedGas })// End of ABi Code from Remix.
       console.log('Contract instance created.')
       currentStep += 1
       var keyToUse = Object.keys(this.VerifyResult)[currentStep]
       // Smart contract and other logic continues.
       // This is call operation. Any account can be used. It cost zero Eth.
-      blockCovid.methods.verifyPersonStatus(hIPFShash, this.hEcDR, merkeRoot, this.fullSignature).call({ from: this.currentAddress }).then(res => {
-        // console.log('Response from Contract: ', res)
-        var verificationResult = res
-        if (verificationResult === true) {
-          // Person passed. Display status.
-          this.VerifyResult[keyToUse].status = 'success'
-          this.$notify({
-            title: 'Successful proof',
-            message: 'You passed blockchain proof',
-            type: 'success'
-          })
-          this.$alert('Test result : ' + this.merkleObject[0] + '.  ' + ' Vaccination Status : ' + this.merkleObject[1] + '.', 'Proof success', {
-            confirmButtonText: 'OK',
-            callback: action => {
-              this.$message({
-                type: 'info',
-                message: 'Successful data retrieval'
-              })
-              // this.getUserChoice()
-            }
-          })
-          this.verifyBtnLoadState = false
-        } else {
-          // Person failed proof verification.
-          // Change status.
-          this.VerifyResult[keyToUse].status = 'error'
-          this.$notify.error({
-            title: 'Failed proof',
-            message: 'Sorry! You failed blockchain verification.'
-          })
-          this.getUserChoice()
-        }
+      // Run loop on pre-defined assertions.
+      blockCovid.methods.verifyPersonStatus(hIPFShash, this.hEcDR, merkeRoot[0], this.fullSignature).call({ from: this.currentAddress }).then(resOne => {
+        // console.log('First response from Contract: ', resOne)
+        this.scResponse.push(resOne)
+        blockCovid.methods.verifyPersonStatus(hIPFShash, this.hEcDR, merkeRoot[1], this.fullSignature).call({ from: this.currentAddress }).then(resTwo => {
+          // console.log('Second response from Contract: ', resTwo)
+          this.scResponse.push(resTwo)
+          if (this.scResponse[0] === true || this.scResponse[1] === true) {
+            // Person passed. Display status.
+            this.VerifyResult[keyToUse].status = 'success'
+            this.$notify({
+              title: 'Successful proof',
+              message: 'You passed blockchain proof',
+              type: 'success'
+            })
+            this.verifyBtnLoadState = false
+          } else {
+            // Person failed proof verification.
+            console.log('Failed proof')
+            // Change status.
+            this.VerifyResult[keyToUse].status = 'error'
+            this.$notify.error({
+              title: 'Failed proof',
+              message: 'Sorry! You failed blockchain verification.'
+            })
+            this.getUserChoice()
+          }
+        }).catch(err => {
+          console.log('Error occurred during blockchain verification', err)
+          this.$message.error('Sorry! Blockchain error')
+        })
       }).catch(err => {
         console.log('Error occurred during blockchain verification', err)
-        this.VerifyResult[keyToUse].status = 'error'
-        this.$notify.error({
-          title: 'Failed proof',
-          message: 'Sorry! You failed blockchain checks.'
-        })
-        this.verifyBtnLoadState = false
-        this.getUserChoice()
+        this.$message.error('Sorry! Blockchain error')
       })
     },
     ipfsInputValidation (input) {
