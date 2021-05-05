@@ -159,6 +159,7 @@ export default {
       timeStamp: '',
       mkRoot: '',
       IPFSHashOfhEcDR: '',
+      hIPFShash: '',
       fullSignature: '',
       signature_substring: '',
       address: '',
@@ -348,15 +349,19 @@ export default {
             if (returnedIPFShash === res[0].hash) {
             // Match confirmed
               this.IPFSHashOfhEcDR = res[0].hash
-              console.log('Data upload to IPFS sucessful')
-              this.$message('File upload to IPFS successful.')
-              this.active += 1 // Increment step by 1 to move to next step.
-              this.personOnboardLoadBtn = false
-              if (this.accountChangeStatus === false) {
-                this.accountSwitchDialogVisible = true
-                // Change state of processData button.
-                this.processDataBtnState = true
-              }
+              // Hash IPFS hash to be stored in SC.
+              getHash(this.IPFSHashOfhEcDR).then(hashOfIPFShash => {
+                this.hIPFShash = hashOfIPFShash
+                console.log('Data upload to IPFS sucessful')
+                this.$message('File upload to IPFS successful.')
+                this.active += 1 // Increment step by 1 to move to next step.
+                this.personOnboardLoadBtn = false
+                if (this.accountChangeStatus === false) {
+                  this.accountSwitchDialogVisible = true
+                  // Change state of processData button.
+                  this.processDataBtnState = true
+                }
+              })
             } else {
               this.$message({
                 message: 'IPFS mismatch! Possible MiTM attack',
@@ -472,7 +477,7 @@ export default {
           // Account switched.
           if (this.anchorOnBlockBtnState === false) {
             // Check all needed smart contract-related data have been acquired.
-            if (this.hEcDR !== '' && this.IPFSHashOfhEcDR !== '' && this.personAccount !== '' && this.fullSignature !== '') {
+            if (this.hEcDR !== '' && this.IPFSHashOfhEcDR !== '' && this.hIPFShash !== '' && this.personAccount !== '' && this.fullSignature !== '') {
               console.log('Sending to blockchain')
               this.submitLoadBtn = true
               var blockCovid = new web3.eth.Contract(ABI, contractAddress, { defaultGas: suppliedGas })
@@ -483,7 +488,7 @@ export default {
                 const txParams = {
                   from: this.currentEthAddress,
                   to: contractAddress,
-                  data: blockCovid.methods.personOnboarding(this.pgAccounts[1], this.HashedID, this.hEcDR, this.mkRoot, this.fullSignature).encodeABI()
+                  data: blockCovid.methods.personOnboarding(this.pgAccounts[1], this.HashedID, this.hEcDR, this.hIPFShash, this.mkRoot, this.fullSignature).encodeABI()
                 }
                 this.sendTnx(txParams).then(tnxReceipt => {
                   console.log('Transaction receipt: ', tnxReceipt)

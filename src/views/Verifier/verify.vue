@@ -369,44 +369,48 @@ export default {
                   // Hashing was successful.
                   // Change status.
                   this.VerifyResult[keyToUse].status = 'success'
-                  // Optional signing.
-                  this.$confirm('Would you like to sign?', 'Optional Information', {
-                    confirmButtonText: 'Yes',
-                    cancelButtonText: 'No',
-                    type: 'info'
-                  }).then(() => {
-                    this.$message({
-                      type: 'success',
-                      message: 'Getting Person signature'
-                    })
-                    // Allow user to sign IPFS hash if need.
-                    signatureGenerator.signatureGen(ipfsHash, this.currentAddress, (sig) => {
-                      this.fullSignature = sig
+                  // Hash IPFS hash to be verified on chain.
+                  getHash(this.enteredIPFShash).then(hashOfIPFShash => {
+                    const hIPFShash = hashOfIPFShash
+                    // Optional signing.
+                    this.$confirm('Would you like to sign?', 'Optional Information', {
+                      confirmButtonText: 'Yes',
+                      cancelButtonText: 'No',
+                      type: 'info'
+                    }).then(() => {
+                      this.$message({
+                        type: 'success',
+                        message: 'Getting Person signature'
+                      })
+                      // Allow user to sign IPFS hash if need.
+                      signatureGenerator.signatureGen(ipfsHash, this.currentAddress, (sig) => {
+                        this.fullSignature = sig
+                        currentStep += 1
+                        keyToUse = Object.keys(this.VerifyResult)[currentStep]
+                        if (this.fullSignature.length > 0) {
+                          this.sigOnIPFShash = (sig.substring(0, 25) + '...' + sig.substr(sig.length - 25)).replace(/"/g, '') // Remove the double quotes.
+                          console.log('Person sig.: ', this.fullSignature)
+                          // Change status.
+                          this.VerifyResult[keyToUse].status = 'success'
+                          // Continue verification on-chain.
+                          this.continueVerificationOnchain(currentStep, hIPFShash, merkleRoot)
+                        }
+                      }).catch(err => {
+                        console.log('Signature error: ', err)
+                        this.$message.error('Oops, Error generating signature.')
+                        this.verifyBtnLoadState = false
+                      })
+                    }).catch(() => {
+                      this.$message({
+                        type: 'info',
+                        message: 'Signature request canceled'
+                      })
+                      // Change status.
+                      this.VerifyResult[keyToUse].status = 'success'
                       currentStep += 1
-                      keyToUse = Object.keys(this.VerifyResult)[currentStep]
-                      if (this.fullSignature.length > 0) {
-                        this.sigOnIPFShash = (sig.substring(0, 25) + '...' + sig.substr(sig.length - 25)).replace(/"/g, '') // Remove the double quotes.
-                        console.log('Person sig.: ', this.fullSignature)
-                        // Change status.
-                        this.VerifyResult[keyToUse].status = 'success'
-                        // Continue verification on-chain.
-                        this.continueVerificationOnchain(currentStep, ipfsHash, merkleRoot)
-                      }
-                    }).catch(err => {
-                      console.log('Signature error: ', err)
-                      this.$message.error('Oops, Error generating signature.')
-                      this.verifyBtnLoadState = false
+                      // Continue verification on-chain.
+                      this.continueVerificationOnchain(currentStep, hIPFShash, merkleRoot)
                     })
-                  }).catch(() => {
-                    this.$message({
-                      type: 'info',
-                      message: 'Signature request canceled'
-                    })
-                    // Change status.
-                    this.VerifyResult[keyToUse].status = 'success'
-                    currentStep += 1
-                    // Continue verification on-chain.
-                    this.continueVerificationOnchain(currentStep, ipfsHash, merkleRoot)
                   })
                 } else {
                   this.VerifyResult[keyToUse].status = 'error'
@@ -455,7 +459,7 @@ export default {
         this.verifyBtnLoadState = false
       })
     },
-    continueVerificationOnchain (currentStep, ipfsHash, merkeRoot) {
+    continueVerificationOnchain (currentStep, hIPFShash, merkeRoot) {
       // Verify on-chain
       var blockCovid = new web3.eth.Contract(ABI, contractAddress, { defaultGas: suppliedGas })// End of ABi Code from Remix.
       console.log('Contract instance created.')
@@ -463,7 +467,7 @@ export default {
       var keyToUse = Object.keys(this.VerifyResult)[currentStep]
       // Smart contract and other logic continues.
       // This is call operation. Any account can be used. It cost zero Eth.
-      blockCovid.methods.verifyPersonStatus(this.hEcDR, merkeRoot, this.fullSignature).call({ from: this.currentAddress }).then(res => {
+      blockCovid.methods.verifyPersonStatus(hIPFShash, this.hEcDR, merkeRoot, this.fullSignature).call({ from: this.currentAddress }).then(res => {
         // console.log('Response from Contract: ', res)
         var verificationResult = res
         if (verificationResult === true) {
