@@ -106,6 +106,11 @@ var ABI = [
       },
       {
         internalType: 'bytes32',
+        name: 'hIPFShash',
+        type: 'bytes32'
+      },
+      {
+        internalType: 'bytes32',
         name: 'covidTnVStatus',
         type: 'bytes32'
       },
@@ -169,6 +174,11 @@ var ABI = [
       },
       {
         internalType: 'bytes32',
+        name: 'hIPFShash',
+        type: 'bytes32'
+      },
+      {
+        internalType: 'bytes32',
         name: 'covidTnVStatus',
         type: 'bytes32'
       },
@@ -191,6 +201,11 @@ var ABI = [
   },
   {
     inputs: [
+      {
+        internalType: 'bytes32',
+        name: 'hIPFShash',
+        type: 'bytes32'
+      },
       {
         internalType: 'bytes32',
         name: 'hashOfEncCovDigRec',
