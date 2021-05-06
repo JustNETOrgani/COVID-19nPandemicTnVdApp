@@ -85,6 +85,7 @@ contract coronaVirusTnV {
             verifyInclusiveness(msg.sender, approvedHealthFacilities) == 1,
             "Access denied"
         ); // Check msg.sender is part of approvedHealthFacilities.
+        require(person[HID].HID == "", "HID already exist");
         person[HID].personAddress = personAddress;
         person[HID].HID = HID;
         person[HID].hashOfEncCovDigRec = hashOfEncCovDigRec;
