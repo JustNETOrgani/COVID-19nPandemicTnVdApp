@@ -262,6 +262,7 @@ export default {
     },
     performVerification (ipfsHash, hashedID) {
       console.log('Verification initialized...')
+      console.time('time')
       this.enteredIPFShash = ipfsHash
       // Create array object for steps.
       this.VerifyResult = {
@@ -434,6 +435,7 @@ export default {
               type: 'success'
             })
             this.verifyBtnLoadState = false
+            console.timeEnd('time')
           } else {
             // Person failed proof verification.
             console.log('Failed proof')
