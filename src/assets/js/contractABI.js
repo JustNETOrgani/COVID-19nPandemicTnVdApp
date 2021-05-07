@@ -159,6 +159,40 @@ var ABI = [
     inputs: [
       {
         internalType: 'address',
+        name: 'personNewAddr',
+        type: 'address'
+      },
+      {
+        internalType: 'bytes32',
+        name: 'HID',
+        type: 'bytes32'
+      },
+      {
+        internalType: 'bytes32',
+        name: 'currenthIPFShash',
+        type: 'bytes32'
+      },
+      {
+        internalType: 'string',
+        name: 'signatureOnIPFShash',
+        type: 'string'
+      }
+    ],
+    name: 'updatePersonBlockchainAddr',
+    outputs: [
+      {
+        internalType: 'bool',
+        name: 'result',
+        type: 'bool'
+      }
+    ],
+    stateMutability: 'nonpayable',
+    type: 'function'
+  },
+  {
+    inputs: [
+      {
+        internalType: 'address',
         name: 'personAddress',
         type: 'address'
       },
