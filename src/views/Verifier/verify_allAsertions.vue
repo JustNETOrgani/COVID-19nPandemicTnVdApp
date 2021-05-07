@@ -139,7 +139,7 @@ export default {
       proofTypeDialogFormVisible: false,
       rules: {
         ifpsHash: [
-          { required: true, message: 'Please input IPFS hash of the paper', trigger: 'blur' },
+          { required: true, message: 'Please input IPFS hash of Covid data', trigger: 'blur' },
           { min: 46, message: 'Length should be at least 46', trigger: 'blur' }
         ],
         tStatus: [
