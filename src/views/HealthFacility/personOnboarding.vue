@@ -186,8 +186,8 @@ export default {
       getPersonSigBtnState: false,
       anchorOnBlockBtnState: false,
       rules: {
-        centerID: [
-          { required: true, message: 'Please input center ID', trigger: 'blur' },
+        userID: [
+          { required: true, message: 'Please input user ID', trigger: 'blur' },
           { min: 5, message: 'Length should be at least 5', trigger: 'blur' }
         ],
         tStatus: [
