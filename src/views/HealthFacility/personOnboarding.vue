@@ -61,10 +61,10 @@
                         <legend>On-chain data</legend>
                             <el-row>
                                 <el-col :span="5" :offset="0">
-                                    <p class="computedLabels">Hash of EcDR:</p>
+                                    <p class="computedLabels">Hash of ID:</p>
                                 </el-col>
                                 <el-col :span="5" :offset="0">
-                                    <p id="formattedString_hEcDR">{{hEcDR}}</p>
+                                    <p id="formattedString_hEcDR">{{HashedID}}</p>
                                 </el-col>
                             </el-row>
                             <el-row>
@@ -477,7 +477,7 @@ export default {
           // Account switched.
           if (this.anchorOnBlockBtnState === false) {
             // Check all needed smart contract-related data have been acquired.
-            if (this.hEcDR !== '' && this.IPFSHashOfhEcDR !== '' && this.hIPFShash !== '' && this.personAccount !== '' && this.fullSignature !== '') {
+            if (this.HashedID !== '' && this.IPFSHashOfhEcDR !== '' && this.hIPFShash !== '' && this.personAccount !== '' && this.fullSignature !== '') {
               console.log('Sending to blockchain')
               this.submitLoadBtn = true
               var blockCovid = new web3.eth.Contract(ABI, contractAddress, { defaultGas: suppliedGas })
@@ -488,7 +488,7 @@ export default {
                 const txParams = {
                   from: this.currentEthAddress,
                   to: contractAddress,
-                  data: blockCovid.methods.personOnboarding(this.pgAccounts[1], this.HashedID, this.hEcDR, this.hIPFShash, this.mkRoot, this.fullSignature).encodeABI()
+                  data: blockCovid.methods.personOnboarding(this.pgAccounts[1], this.HashedID, this.hIPFShash, this.mkRoot, this.fullSignature).encodeABI()
                 }
                 this.sendTnx(txParams).then(tnxReceipt => {
                   console.log('Transaction receipt: ', tnxReceipt)

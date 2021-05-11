@@ -269,7 +269,7 @@ export default {
         1: { step: '1', name: 'Getting data from IPFS', status: 'wait' },
         2: { step: '2', name: 'Timestamp check', status: 'wait' },
         3: { step: '3', name: 'Creating Proof', status: 'wait' },
-        4: { step: '4', name: 'Hashing encrypted data', status: 'wait' },
+        4: { step: '4', name: 'Hashing data', status: 'wait' },
         5: { step: '5', name: 'Optional signature request', status: 'wait' },
         6: { step: '6', name: 'Verifying in Smart Contract', status: 'wait' }
       }
@@ -308,70 +308,53 @@ export default {
               currentStep += 1
               keyToUse = Object.keys(this.VerifyResult)[currentStep]
               // Data body in IPFS pulled object.
-              console.log('Encrypted data: ', EcDRwithSig)
-              // Change status.
-              this.VerifyResult[keyToUse].status = 'success'
-              // Hash the EcDR.
-              getHash(EcDRwithSig.encryptedData).then(res => {
-                this.hEcDR = res
+              // console.log('Encrypted data: ', EcDRwithSig)
+              // Hash IPFS hash to be verified on chain.
+              getHash(this.enteredIPFShash).then(hashOfIPFShash => {
                 currentStep += 1
                 keyToUse = Object.keys(this.VerifyResult)[currentStep]
-                if (this.hEcDR.length > 0) {
-                  // Hashing was successful.
-                  // Change status.
-                  this.VerifyResult[keyToUse].status = 'success'
-                  // Hash IPFS hash to be verified on chain.
-                  getHash(this.enteredIPFShash).then(hashOfIPFShash => {
-                    const hIPFShash = hashOfIPFShash
-                    // Optional signing.
-                    this.$confirm('Would you like to sign?', 'Optional Information', {
-                      confirmButtonText: 'Yes',
-                      cancelButtonText: 'No',
-                      type: 'info'
-                    }).then(() => {
-                      this.$message({
-                        type: 'success',
-                        message: 'Getting Person signature'
-                      })
-                      // Allow user to sign IPFS hash if need.
-                      signatureGenerator.signatureGen(ipfsHash, this.currentAddress, (sig) => {
-                        this.fullSignature = sig
-                        currentStep += 1
-                        keyToUse = Object.keys(this.VerifyResult)[currentStep]
-                        if (this.fullSignature.length > 0) {
-                          this.sigOnIPFShash = (sig.substring(0, 25) + '...' + sig.substr(sig.length - 25)).replace(/"/g, '') // Remove the double quotes.
-                          console.log('Person sig.: ', this.fullSignature)
-                          // Change status.
-                          this.VerifyResult[keyToUse].status = 'success'
-                          // Continue verification on-chain.
-                          this.continueVerificationOnchain(currentStep, hIPFShash, this.merkleRoot)
-                        }
-                      }).catch(err => {
-                        console.log('Signature error: ', err)
-                        this.$message.error('Oops, Error generating signature.')
-                        this.verifyBtnLoadState = false
-                      })
-                    }).catch(() => {
-                      this.$message({
-                        type: 'info',
-                        message: 'Signature request canceled'
-                      })
+                // Change status.
+                this.VerifyResult[keyToUse].status = 'success'
+                const hIPFShash = hashOfIPFShash
+                // Optional signing.
+                this.$confirm('Would you like to sign?', 'Optional Information', {
+                  confirmButtonText: 'Yes',
+                  cancelButtonText: 'No',
+                  type: 'info'
+                }).then(() => {
+                  this.$message({
+                    type: 'success',
+                    message: 'Getting Person signature'
+                  })
+                  // Allow user to sign IPFS hash if need.
+                  signatureGenerator.signatureGen(ipfsHash, this.currentAddress, (sig) => {
+                    this.fullSignature = sig
+                    currentStep += 1
+                    keyToUse = Object.keys(this.VerifyResult)[currentStep]
+                    if (this.fullSignature.length > 0) {
+                      this.sigOnIPFShash = (sig.substring(0, 25) + '...' + sig.substr(sig.length - 25)).replace(/"/g, '') // Remove the double quotes.
+                      console.log('Person sig.: ', this.fullSignature)
                       // Change status.
                       this.VerifyResult[keyToUse].status = 'success'
-                      currentStep += 1
                       // Continue verification on-chain.
-                      this.continueVerificationOnchain(currentStep, hIPFShash, this.merkleRoot)
-                    })
+                      this.continueVerificationOnchain(currentStep, hIPFShash, this.merkleRoot, hashedID)
+                    }
+                  }).catch(err => {
+                    console.log('Signature error: ', err)
+                    this.$message.error('Oops, Error generating signature.')
+                    this.verifyBtnLoadState = false
                   })
-                } else {
-                  this.VerifyResult[keyToUse].status = 'error'
-                  this.verifyBtnLoadState = false
-                  this.$message.error('Hash length error.')
-                }
-              }).catch(err => {
-                console.log('Hashing error: ', err)
-                this.$message.error('Oops, Error hashing data.')
-                this.verifyBtnLoadState = false
+                }).catch(() => {
+                  this.$message({
+                    type: 'info',
+                    message: 'Signature request canceled'
+                  })
+                  // Change status.
+                  this.VerifyResult[keyToUse].status = 'success'
+                  currentStep += 1
+                  // Continue verification on-chain.
+                  this.continueVerificationOnchain(currentStep, hIPFShash, this.merkleRoot, hashedID)
+                })
               })
             } else {
               this.$alert('Invalid proof generation of covid records. ', 'Invalid Proof', {
@@ -410,7 +393,7 @@ export default {
         this.verifyBtnLoadState = false
       })
     },
-    continueVerificationOnchain (currentStep, hIPFShash, merkeRoot) {
+    continueVerificationOnchain (currentStep, hIPFShash, merkeRoot, hashedID) {
       // Verify on-chain
       console.log('Verifying on-chain.')
       var blockCovid = new web3.eth.Contract(ABI, contractAddress, { defaultGas: suppliedGas })// End of ABi Code from Remix.
@@ -420,10 +403,10 @@ export default {
       // Smart contract and other logic continues.
       // This is call operation. Any account can be used. It cost zero Eth.
       // Run loop on pre-defined assertions.
-      blockCovid.methods.verifyPersonStatus(hIPFShash, this.hEcDR, merkeRoot[0], this.fullSignature).call({ from: this.currentAddress }).then(resOne => {
+      blockCovid.methods.verifyPersonStatus(hIPFShash, hashedID, merkeRoot[0], this.fullSignature).call({ from: this.currentAddress }).then(resOne => {
         // console.log('First response from Contract: ', resOne)
         this.scResponse.push(resOne)
-        blockCovid.methods.verifyPersonStatus(hIPFShash, this.hEcDR, merkeRoot[1], this.fullSignature).call({ from: this.currentAddress }).then(resTwo => {
+        blockCovid.methods.verifyPersonStatus(hIPFShash, hashedID, merkeRoot[1], this.fullSignature).call({ from: this.currentAddress }).then(resTwo => {
           // console.log('Second response from Contract: ', resTwo)
           this.scResponse.push(resTwo)
           if (this.scResponse[0] === true || this.scResponse[1] === true) {
