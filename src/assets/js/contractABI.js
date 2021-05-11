@@ -101,11 +101,6 @@ var ABI = [
       },
       {
         internalType: 'bytes32',
-        name: 'hashOfEncCovDigRec',
-        type: 'bytes32'
-      },
-      {
-        internalType: 'bytes32',
         name: 'hIPFShash',
         type: 'bytes32'
       },
@@ -203,11 +198,6 @@ var ABI = [
       },
       {
         internalType: 'bytes32',
-        name: 'hashOfEncCovDigRec_new',
-        type: 'bytes32'
-      },
-      {
-        internalType: 'bytes32',
         name: 'hIPFShash',
         type: 'bytes32'
       },
@@ -242,7 +232,7 @@ var ABI = [
       },
       {
         internalType: 'bytes32',
-        name: 'hashOfEncCovDigRec',
+        name: 'HID',
         type: 'bytes32'
       },
       {

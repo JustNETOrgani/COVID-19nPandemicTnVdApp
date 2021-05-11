@@ -7,14 +7,9 @@ contract coronaVirusTnV{
     struct personStruct{
         address personAddress; // Blockchain address of person.
         bytes32 HID; // Hashed Identifier of user.
-        bytes32 hashOfEncCovDigRec; // Hash of the EcDR
         bytes32 hIPFShash; // Hash of the IPFS hash. // Delinks on-chain connection to IPFS.
         bytes32 covidTnVStatus; // Contains Merkle root hash. 
         string signature; // Signature generated from the IPFShash as message.
-    }
-    struct personhEcDRnAddrLkup{
-        bytes32 hashOfEncCovDigRec; // Hash of the EcDR
-        bytes32 HID; // Hashed Identifier of user.
     }
     struct approvedHF{
         string AHF_name; // Name of AHF
@@ -25,7 +20,6 @@ contract coronaVirusTnV{
     address contractDeployer; // Contract deployer like Ministry of Health or CDC.
     // Public mappings.
     mapping (bytes32 => personStruct) internal person; //Mapping for persons.
-    mapping (bytes32 => personhEcDRnAddrLkup)  internal personLookup; // Mapping for person lookup based on hEcDR. To be used to "blind verifiers"
     mapping (address => approvedHF)  public approvedHC; // Mapping for approved health facilities.
     // Events begin.
     event onboarded(address indexed txInitiator, bytes32 HID);
@@ -59,42 +53,36 @@ contract coronaVirusTnV{
         return true;
     }
     // Function to onboard person.
-    function personOnboarding(address personAddress, bytes32 HID, bytes32 hashOfEncCovDigRec, bytes32 hIPFShash, bytes32 covidTnVStatus, string memory signature) public returns (bool result){
+    function personOnboarding(address personAddress, bytes32 HID, bytes32 hIPFShash, bytes32 covidTnVStatus, string memory signature) public returns (bool result){
         // AA checks.
         require (verifyInclusiveness(msg.sender,approvedHealthFacilities)==1, 'Access denied');// Check msg.sender is part of approvedHealthFacilities.
         require (person[HID].HID == "", "HID already exist");
         person[HID].personAddress = personAddress;
         person[HID].HID = HID;
-        person[HID].hashOfEncCovDigRec = hashOfEncCovDigRec;
         person[HID].hIPFShash = hIPFShash;
         person[HID].covidTnVStatus = covidTnVStatus;
         person[HID].signature = signature;
-        personLookup[hashOfEncCovDigRec].hashOfEncCovDigRec = hashOfEncCovDigRec;
-        personLookup[hashOfEncCovDigRec].HID = HID;
         emit onboarded(msg.sender, HID);
         return true;
     }
     //  Fucntion to update a person's Covid-19 test status by an approvedHealthFacility.
-    function updatePersonData(address personAddress, bytes32 HID, bytes32 hashOfEncCovDigRec_new,  bytes32 hIPFShash, bytes32 covidTnVStatus, string memory signature_new) public returns (bool result){
+    function updatePersonData(address personAddress, bytes32 HID, bytes32 hIPFShash, bytes32 covidTnVStatus, string memory signature_new) public returns (bool result){
         // AA checks.
         require (verifyInclusiveness(msg.sender,approvedHealthFacilities)==1, 'Access denied');// Check msg.sender is part of approvedHealthFacilities.
         require(person[HID].HID == HID, 'Invalid Hashed Identifier');
         require (person[HID].personAddress == personAddress, "Address mismatch");
         // Update person records
-        person[HID].hashOfEncCovDigRec = hashOfEncCovDigRec_new;
         person[HID].hIPFShash = hIPFShash;
         person[HID].covidTnVStatus = covidTnVStatus;
         person[HID].signature = signature_new;
-        personLookup[hashOfEncCovDigRec_new].hashOfEncCovDigRec = hashOfEncCovDigRec_new;
-        personLookup[hashOfEncCovDigRec_new].HID = HID;
         emit personUpdated(msg.sender, HID);
         return true;
     }
     // Function for status verification.
     // Check possibility of removing personAddress and using the resultant address from signature verification. Check out ecrecover.--> Incurs cost.
-    function verifyPersonStatus(bytes32 hIPFShash, bytes32 hashOfEncCovDigRec, bytes32 covidTnVStatus, string memory signature) public view returns (bool) {
-        personStruct memory ps = person[personLookup[hashOfEncCovDigRec].HID];
-        if (ps.hIPFShash==hIPFShash && ps.covidTnVStatus==covidTnVStatus && ps.hashOfEncCovDigRec==hashOfEncCovDigRec) {
+    function verifyPersonStatus(bytes32 hIPFShash, bytes32 HID, bytes32 covidTnVStatus, string memory signature) public view returns (bool) {
+        personStruct memory ps = person[HID];
+        if (ps.hIPFShash==hIPFShash && ps.covidTnVStatus==covidTnVStatus) {
             bytes memory sigBytes = bytes(signature);
             if (sigBytes.length == 0) {
                 // Person is verifying without Signature
@@ -103,7 +91,7 @@ contract coronaVirusTnV{
             else {
                     // Person is verifying via Signature
                     // Check signature matches on-chain signature to confirm ownership of the address.
-                    if (keccak256(abi.encodePacked(person[personLookup[hashOfEncCovDigRec].HID].signature)) == keccak256(abi.encodePacked(signature))){
+                    if (keccak256(abi.encodePacked(person[HID].signature)) == keccak256(abi.encodePacked(signature))){
                         return true;
                     }
                     else {
