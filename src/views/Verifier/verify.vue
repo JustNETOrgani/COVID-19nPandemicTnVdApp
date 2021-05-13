@@ -304,9 +304,9 @@ export default {
             if (merkleToutputOne.aProof === true && merkleToutputTwo.aProof === true) {
               this.merkleRoot.push(merkleToutputOne.merkleRoot, merkleToutputTwo.merkleRoot)
               // Increment step.
-              this.VerifyResult[keyToUse].status = 'success'
               currentStep += 1
               keyToUse = Object.keys(this.VerifyResult)[currentStep]
+              this.VerifyResult[keyToUse].status = 'success'
               // Data body in IPFS pulled object.
               // console.log('Encrypted data: ', EcDRwithSig)
               // Hash IPFS hash to be verified on chain.
